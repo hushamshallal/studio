@@ -29,11 +29,6 @@ const sidebarFooterItems = [
     { href: '/login', iconName: 'LogOut', label: 'تسجيل الخروج' },
 ];
 
-const Icon = ({ name }: { name: string }) => {
-    const LucideIcon = (Icons as any)[name];
-    return LucideIcon ? <LucideIcon /> : null;
-};
-
 export default function AppPage() {
   return (
     <SidebarProvider>
