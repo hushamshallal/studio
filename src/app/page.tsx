@@ -1,18 +1,5 @@
 import type { Metadata } from 'next';
-import { Home, Users, Clapperboard, AudioLines, MessageSquare, Compass, Settings, LogOut } from 'lucide-react';
-
-import {
-  Sidebar,
-  SidebarProvider,
-  SidebarInset,
-  SidebarHeader,
-  SidebarTrigger,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { MobileNav } from '@/components/mobile-nav';
@@ -21,6 +8,7 @@ import { Stories } from '@/components/stories';
 import { CreatePost } from '@/components/create-post';
 import { PostCard } from '@/components/post-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import * as Icons from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'الرئيسية | سلام',
@@ -28,13 +16,23 @@ export const metadata: Metadata = {
 };
 
 const navItems = [
-  { href: '#', icon: Home, label: 'الرئيسية' },
-  { href: '#', icon: Compass, label: 'استكشف' },
-  { href: '#', icon: Clapperboard, label: 'ريلز' },
-  { href: '#', icon: Users, label: 'المجالس' },
-  { href: '#', icon: AudioLines, label: 'الديوان' },
-  { href: '#', icon: MessageSquare, label: 'الرسائل' },
+  { href: '#', iconName: 'Home', label: 'الرئيسية' },
+  { href: '#', iconName: 'Compass', label: 'استكشف' },
+  { href: '#', iconName: 'Clapperboard', label: 'ريلز' },
+  { href: '#', iconName: 'Users', label: 'المجالس' },
+  { href: '#', iconName: 'AudioLines', label: 'الديوان' },
+  { href: '#', iconName: 'MessageSquare', label: 'الرسائل' },
 ];
+
+const sidebarFooterItems = [
+    { href: '#', iconName: 'Settings', label: 'الإعدادات' },
+    { href: '/login', iconName: 'LogOut', label: 'تسجيل الخروج' },
+];
+
+const Icon = ({ name }: { name: string }) => {
+    const LucideIcon = (Icons as any)[name];
+    return LucideIcon ? <LucideIcon /> : null;
+};
 
 export default function AppPage() {
   return (
@@ -51,43 +49,42 @@ export default function AppPage() {
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
-              {navItems.map((item, index) => (
-                <SidebarMenuItem key={item.label}>
-                  <SidebarMenuButton asChild tooltip={item.label} isActive={index === 0}>
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navItems.map((item, index) => {
+                const LucideIcon = (Icons as any)[item.iconName];
+                return (
+                    <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton asChild tooltip={item.label} isActive={index === 0}>
+                        <Link href={item.href}>
+                        {LucideIcon && <LucideIcon />}
+                        <span>{item.label}</span>
+                        </Link>
+                    </SidebarMenuButton>
+                    </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
             <SidebarMenu>
-                <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="الإعدادات">
-                        <Link href="#">
-                            <Settings/>
-                            <span>الإعدادات</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="تسجيل الخروج">
-                        <Link href="/login">
-                            <LogOut/>
-                            <span>تسجيل الخروج</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
+                {sidebarFooterItems.map(item => {
+                    const LucideIcon = (Icons as any)[item.iconName];
+                    return (
+                        <SidebarMenuItem key={item.label}>
+                            <SidebarMenuButton asChild tooltip={item.label}>
+                                <Link href={item.href}>
+                                    {LucideIcon && <LucideIcon />}
+                                    <span>{item.label}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
             </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
         <SidebarInset className="max-h-screen overflow-hidden">
             <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                 <div className="flex items-center gap-4">
-                  <SidebarTrigger className="md:hidden" />
                   <h1 className="text-xl font-bold font-headline hidden md:block">الرئيسية</h1>
                 </div>
                 <UserNav />
