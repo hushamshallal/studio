@@ -3,16 +3,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
-import { useRouter, usePathname } from 'next/navigation';
-import { CreatePost } from '@/components/create-post';
 import { Stories } from '@/components/stories';
 import { PostCard, Post } from '@/components/post-card';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import ExplorePage from './explore/page';
 import AppLayout from '@/components/layout/app-layout';
-
 
 const PostSkeleton = () => (
     <div className="p-4 border rounded-xl space-y-4">
@@ -30,10 +26,8 @@ const PostSkeleton = () => (
 );
 
 
-export default function AppPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+export default function HomePage() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
 
@@ -56,17 +50,8 @@ export default function AppPage() {
     return () => unsubscribe(); // Cleanup listener on unmount
   }, [user]);
 
-  if (authLoading || !user) {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <p>جار التحميل...</p>
-        </div>
-    );
-  }
-
   return (
     <AppLayout>
-      {pathname === '/' ? (
         <div className="p-4 space-y-4">
           <Stories />
           <div className="space-y-4">
@@ -82,11 +67,6 @@ export default function AppPage() {
             )}
           </div>
         </div>
-      ) : (
-        <div className="p-4">
-          <ExplorePage />
-        </div>
-       )}
     </AppLayout>
   );
 }
