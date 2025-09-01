@@ -84,7 +84,7 @@ export default function AppPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-       <aside className="group fixed top-0 right-0 h-screen flex flex-col border-l bg-sidebar text-sidebar-foreground p-4 pt-8 md:flex transition-all duration-300 ease-in-out w-24 hover:w-80 z-20 hidden">
+       <aside className="group fixed top-0 right-0 h-screen flex flex-col border-l bg-sidebar text-sidebar-foreground p-4 pt-8 md:flex transition-all duration-300 ease-in-out w-24 hover:w-80 z-20">
          <div className="flex flex-col h-full overflow-hidden">
             <h1 className="text-3xl font-headline text-accent px-2 mb-8 transition-all duration-300 group-hover:px-4">
               <span className="group-hover:hidden">س</span>
@@ -101,7 +101,7 @@ export default function AppPage() {
                     className={cn(
                       'flex items-center gap-4 p-3 rounded-full text-lg font-medium transition-colors justify-center group-hover:justify-start',
                       isActive
-                        ? 'text-blue-500 font-bold'
+                        ? 'text-blue-500 font-bold group-hover:bg-blue-500/10'
                         : 'text-muted-foreground hover:bg-sidebar-accent/50'
                     )}
                   >
@@ -166,4 +166,3 @@ export default function AppPage() {
     </div>
   );
 }
-
