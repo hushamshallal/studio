@@ -14,15 +14,31 @@ import {
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { useAuth } from "@/context/auth-context"
-import { auth } from "@/lib/firebase/config"
+import { auth, db } from "@/lib/firebase/config"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import React, { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
 
 export function UserNav({ isExpanded }: { isExpanded: boolean }) {
   const { user } = useAuth();
   const router = useRouter();
+  const [username, setUsername] = useState('');
+
+
+  useEffect(() => {
+    if (user) {
+        const fetchUsername = async () => {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                setUsername(userDoc.data().username);
+            }
+        };
+        fetchUsername();
+    }
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -33,7 +49,7 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
     return null;
   }
   
-  const userHandle = user.email ? `@${user.email.split('@')[0]}` : '';
+  const userHandle = username ? `@${username}` : (user.email ? `@${user.email.split('@')[0]}` : '');
 
 
   return (
@@ -70,7 +86,9 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild><Link href="#">الملف الشخصي</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild disabled={!username}>
+            <Link href={username ? `/u/${username}` : '#'}>الملف الشخصي</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild><Link href="#">الإعدادات</Link></DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

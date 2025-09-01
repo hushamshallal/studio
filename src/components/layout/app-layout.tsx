@@ -12,14 +12,8 @@ import { MobileNav } from '@/components/mobile-nav';
 import { UserNav } from '@/components/user-nav';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-const navItems = [
-  { href: '/', iconName: 'Home', label: 'الرئيسية' },
-  { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
-  { href: '#', iconName: 'User', label: 'الملف الشخصي' },
-  { href: '#', iconName: 'Users', label: 'المجالس' },
-  { href: '#', iconName: 'Mic', label: 'الديوان' },
-];
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -27,12 +21,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isCreatePostOpen, setCreatePostOpen] = useState(false);
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
+  const [username, setUsername] = useState('');
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
+    } else if (user) {
+        const fetchUsername = async () => {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                setUsername(userDoc.data().username);
+            }
+        };
+        fetchUsername();
     }
   }, [user, authLoading, router]);
+
+  const navItems = [
+    { href: '/', iconName: 'Home', label: 'الرئيسية' },
+    { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
+    { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
+    { href: '#', iconName: 'Users', label: 'المجالس' },
+    { href: '#', iconName: 'Mic', label: 'الديوان' },
+  ];
 
   if (authLoading || !user) {
     return (
@@ -42,6 +53,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const getPageTitle = () => {
+    if (pathname === '/') return 'الرئيسية';
+    if (pathname === '/explore') return 'استكشاف';
+    if (pathname.startsWith('/u/')) return 'الملف الشخصي';
+    return 'سلام';
+  }
+
   return (
     <Dialog open={isCreatePostOpen} onOpenChange={setCreatePostOpen}>
       <div className="flex min-h-screen bg-background">
@@ -49,7 +67,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onMouseEnter={() => setSidebarExpanded(true)}
             onMouseLeave={() => setSidebarExpanded(false)}
             className={cn(
-              "group fixed top-0 right-0 h-screen flex flex-col border-l bg-sidebar text-sidebar-foreground p-2 pt-4 z-20 transition-all duration-300 ease-in-out",
+              "group fixed top-0 right-0 h-screen flex-col border-l bg-sidebar text-sidebar-foreground p-2 pt-4 z-20 transition-all duration-300 ease-in-out hidden sm:flex",
               isSidebarExpanded ? 'w-80' : 'w-24'
             )}
           >
@@ -67,7 +85,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   return (
                     <Link
                       key={item.label}
-                      href={item.href}
+                      href={item.disabled ? '#' : item.href}
                       title={!isSidebarExpanded ? item.label : undefined}
                       className={cn(
                         'flex items-center gap-4 p-3 rounded-full text-lg transition-colors',
@@ -75,6 +93,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         isActive
                           ? 'text-blue-500 font-bold'
                           : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-primary-foreground',
+                        item.disabled && 'opacity-50 cursor-not-allowed'
                       )}
                     >
                       {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
@@ -95,11 +114,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
            </div>
         </aside>
 
-        <div className={cn("flex flex-1 transition-all duration-300 ease-in-out", isSidebarExpanded ? "md:mr-80" : "md:mr-24")}>
+        <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-24")}>
           <main className="flex-1 border-r border-l max-w-2xl mx-auto w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                   <div className="flex items-center gap-4">
-                      <h1 className="text-xl font-bold">{pathname === '/explore' ? 'استكشاف' : 'الرئيسية'}</h1>
+                      <h1 className="text-xl font-bold">{getPageTitle()}</h1>
                   </div>
                   <div className="flex items-center gap-2">
                        <Button variant="ghost" size="icon" className="relative rounded-full">
