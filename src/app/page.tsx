@@ -17,6 +17,9 @@ import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import ExplorePage from './explore/page';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 const navItems = [
   { href: '/', iconName: 'Home', label: 'الرئيسية' },
@@ -184,22 +187,4 @@ export default function AppPage() {
       </div>
     </Dialog>
   );
-}
-
-// Minimal ExplorePage component to be used inside the main layout
-function ExplorePage() {
-    return (
-        <div className="space-y-6">
-            <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input 
-                    placeholder="ابحث عن أشخاص، مجالس، منشورات، أو وسوم..."
-                    className="w-full rounded-full bg-muted pl-4 pr-10 py-6 text-base"
-                />
-            </div>
-            <div className="flex justify-center items-center h-64">
-                <p className="text-muted-foreground">لا توجد منشورات رائجة حالياً.</p>
-            </div>
-        </div>
-    )
 }
