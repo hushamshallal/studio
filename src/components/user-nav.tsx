@@ -30,22 +30,25 @@ export function UserNav() {
   if (!user) {
     return null;
   }
+  
+  const userHandle = user.email ? `@${user.email.split('@')[0]}` : '';
+
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="w-full justify-start items-center p-2 h-auto rounded-full">
+        <Button variant="ghost" className="w-full justify-between items-center p-2 h-auto rounded-full hover:bg-sidebar-accent/50">
             <div className="flex items-center gap-3">
              <Avatar className="h-10 w-10">
                 <AvatarImage src={user.photoURL || undefined} alt="User avatar" data-ai-hint="person" />
                 <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
             <div className="text-right">
-                <p className="font-bold text-sm">{user.displayName}</p>
-                <p className="text-muted-foreground text-xs">@{user.email?.split('@')[0]}</p>
+                <p className="font-bold text-sm text-sidebar-primary-foreground">{user.displayName}</p>
+                <p className="text-muted-foreground text-xs">{userHandle}</p>
             </div>
-            <MoreHorizontal className="h-5 w-5 mr-auto" />
             </div>
+            <MoreHorizontal className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 mb-2" align="end" forceMount>
