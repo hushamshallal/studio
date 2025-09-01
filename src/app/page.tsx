@@ -101,7 +101,7 @@ export default function AppPage() {
                     className={cn(
                       'flex items-center gap-4 p-3 rounded-full text-lg font-medium transition-colors justify-center group-hover:justify-start',
                       isActive
-                        ? 'text-sidebar-primary-foreground font-bold bg-primary'
+                        ? 'text-primary font-bold group-hover:bg-primary/10'
                         : 'text-muted-foreground hover:bg-sidebar-accent/50'
                     )}
                   >
@@ -111,9 +111,9 @@ export default function AppPage() {
                 );
               })}
             </nav>
-            <Button size="lg" className="rounded-full w-full text-lg h-14 mb-6 font-bold justify-center group-hover:w-14">
-                <Icons.Plus className="h-7 w-7 group-hover:ml-0 shrink-0" />
-                <span className="w-0 opacity-0 group-hover:w-0 group-hover:opacity-0 transition-all duration-200 delay-100 whitespace-nowrap">نشر</span>
+            <Button size="lg" className="rounded-full w-14 h-14 text-lg mb-6 font-bold justify-center group-hover:w-full">
+                <Icons.Plus className="h-7 w-7 group-hover:ml-2 shrink-0" />
+                <span className="w-0 opacity-0 group-hover:w-auto group-hover:opacity-100 transition-all duration-200 delay-100 whitespace-nowrap">نشر</span>
             </Button>
             <UserNav />
          </div>
