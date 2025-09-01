@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { href: '/', iconName: 'Home', label: 'الرئيسية' },
   { href: '#', iconName: 'Search', label: 'استكشاف' },
-  { href: '#', iconName: 'Clapperboard', label: 'ريلز' },
+  { href: '#', iconName: 'Compass', label: 'اكتشف' },
   { href: '#', iconName: 'User', label: 'الملف الشخصي' },
   { href: '#', iconName: 'Users', label: 'المجالس' },
   { href: '#', iconName: 'Mic', label: 'الديوان' },
@@ -101,7 +101,7 @@ export default function AppPage() {
                     className={cn(
                       'flex items-center gap-4 p-3 rounded-full text-lg font-medium transition-colors justify-center group-hover:justify-start',
                       isActive
-                        ? 'text-sidebar-primary-foreground font-bold bg-sidebar-accent'
+                        ? 'text-sidebar-primary-foreground font-bold bg-primary'
                         : 'text-muted-foreground hover:bg-sidebar-accent/50'
                     )}
                   >
@@ -111,9 +111,9 @@ export default function AppPage() {
                 );
               })}
             </nav>
-            <Button size="lg" className="rounded-full w-full text-lg h-14 mb-6 font-bold group-hover:px-6 justify-center">
-                <Icons.Feather className="h-6 w-6 group-hover:ml-2 shrink-0" />
-                <span className="w-0 opacity-0 group-hover:w-auto group-hover:opacity-100 transition-all duration-200 delay-100 whitespace-nowrap">نشر</span>
+            <Button size="lg" className="rounded-full w-full text-lg h-14 mb-6 font-bold justify-center group-hover:w-14">
+                <Icons.Plus className="h-7 w-7 group-hover:ml-0 shrink-0" />
+                <span className="w-0 opacity-0 group-hover:w-0 group-hover:opacity-0 transition-all duration-200 delay-100 whitespace-nowrap">نشر</span>
             </Button>
             <UserNav />
          </div>
