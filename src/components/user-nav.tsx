@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -37,18 +38,18 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="w-full justify-between items-center p-2 h-auto rounded-full hover:bg-sidebar-accent/50">
+        <Button variant="ghost" className="w-full justify-center group-hover:justify-between items-center p-2 h-auto rounded-full hover:bg-sidebar-accent/50">
             <div className="flex items-center gap-3">
-             <Avatar className="h-10 w-10">
+             <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage src={user.photoURL || undefined} alt="User avatar" data-ai-hint="person" />
                 <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
-            <div className="text-right">
+            <div className="text-right opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 whitespace-nowrap">
                 <p className="font-bold text-sm text-sidebar-primary-foreground">{user.displayName}</p>
                 <p className="text-muted-foreground text-xs">{userHandle}</p>
             </div>
             </div>
-            <MoreHorizontal className="h-5 w-5" />
+            <MoreHorizontal className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 mb-2" align="end" forceMount>

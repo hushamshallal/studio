@@ -15,6 +15,7 @@ import { UserNav } from '@/components/user-nav';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 
 const navItems = [
@@ -83,9 +84,12 @@ export default function AppPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-       <aside className="fixed top-0 right-0 h-screen w-80 flex-col border-l bg-sidebar text-sidebar-foreground p-4 pt-8 hidden md:flex">
-         <div className="flex flex-col h-full">
-            <h1 className="text-3xl font-headline text-accent px-4 mb-8">سلام</h1>
+       <aside className="group fixed top-0 right-0 h-screen flex-col border-l bg-sidebar text-sidebar-foreground p-4 pt-8 hidden md:flex transition-all duration-300 ease-in-out w-24 hover:w-80">
+         <div className="flex flex-col h-full overflow-hidden">
+            <h1 className="text-3xl font-headline text-accent px-2 mb-8 transition-all duration-300 group-hover:px-4">
+              <span className="group-hover:hidden">س</span>
+              <span className="hidden group-hover:inline">سلام</span>
+            </h1>
             <nav className="flex flex-col gap-2 flex-1">
               {navItems.map((item, index) => {
                 const LucideIcon = (Icons as any)[item.iconName];
@@ -94,27 +98,28 @@ export default function AppPage() {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`flex items-center gap-4 p-3 rounded-full text-lg font-medium transition-colors ${
+                    className={cn(
+                      'flex items-center gap-4 p-3 rounded-full text-lg font-medium transition-colors justify-center group-hover:justify-start',
                       isActive
                         ? 'text-sidebar-primary-foreground font-bold bg-sidebar-accent'
                         : 'text-muted-foreground hover:bg-sidebar-accent/50'
-                    }`}
+                    )}
                   >
-                    {LucideIcon && <LucideIcon className="h-6 w-6" />}
-                    <span>{item.label}</span>
+                    {LucideIcon && <LucideIcon className="h-6 w-6 shrink-0" />}
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-100 whitespace-nowrap">{item.label}</span>
                   </Link>
                 );
               })}
             </nav>
-            <Button size="lg" className="rounded-full w-full text-lg h-14 mb-6 font-bold">
-                <Icons.Feather className="h-6 w-6 ml-2" />
-                <span>نشر</span>
+            <Button size="lg" className="rounded-full w-full text-lg h-14 mb-6 font-bold group-hover:px-6 justify-center">
+                <Icons.Feather className="h-6 w-6 group-hover:ml-2 shrink-0" />
+                <span className="w-0 opacity-0 group-hover:w-auto group-hover:opacity-100 transition-all duration-200 delay-100 whitespace-nowrap">نشر</span>
             </Button>
             <UserNav />
          </div>
       </aside>
 
-      <div className="flex flex-1 md:mr-80">
+      <div className="flex flex-1 md:mr-24">
         <main className="flex-1 border-r border-l">
              <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                 <div className="flex items-center gap-2">
