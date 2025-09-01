@@ -29,7 +29,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <div className="md:pl-80">
+            <div>
               {children}
             </div>
             <Toaster />

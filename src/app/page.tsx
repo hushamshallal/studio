@@ -84,7 +84,7 @@ export default function AppPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-       <aside className="group fixed top-0 right-0 h-screen flex-col border-l bg-sidebar text-sidebar-foreground p-4 pt-8 hidden md:flex transition-all duration-300 ease-in-out w-24 hover:w-80">
+       <aside className="group fixed top-0 right-0 h-screen flex-col border-l bg-sidebar text-sidebar-foreground p-4 pt-8 hidden md:flex transition-all duration-300 ease-in-out w-24 hover:w-80 z-20">
          <div className="flex flex-col h-full overflow-hidden">
             <h1 className="text-3xl font-headline text-accent px-2 mb-8 transition-all duration-300 group-hover:px-4">
               <span className="group-hover:hidden">س</span>
@@ -120,7 +120,7 @@ export default function AppPage() {
       </aside>
 
       <div className="flex flex-1 md:mr-24">
-        <main className="flex-1 border-r border-l">
+        <main className="flex-1 border-r border-l max-w-2xl mx-auto w-full">
              <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                 <div className="flex items-center gap-2">
                      <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -153,7 +153,7 @@ export default function AppPage() {
               </div>
             </div>
         </main>
-        <aside className="w-80 hidden lg:block p-4">
+        <aside className="w-80 hidden lg:block p-4 flex-shrink-0">
             <div className="sticky top-16">
                  <div className="bg-muted rounded-2xl p-4">
                      <h2 className="font-bold mb-4">أبرز الوسوم</h2>
