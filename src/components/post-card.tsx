@@ -47,22 +47,22 @@ export function PostCard({ username, userhandle, avatarUrl, time, content, media
     const isPortrait = mediaUrl?.includes('400/600');
 
     return (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden rounded-xl">
             <CardHeader className="flex flex-row items-center gap-4 p-4">
                 <Avatar>
                     <AvatarImage src={avatarUrl} alt={username} data-ai-hint="person" />
                     <AvatarFallback>{username.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="grid gap-1">
+                <div className="grid gap-0">
                     <p className="font-semibold">{username}</p>
                     <p className="text-sm text-muted-foreground">{userhandle} · {time}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="ms-auto">
+                <Button variant="ghost" size="icon" className="ms-auto rounded-full">
                     <MoreHorizontal />
                 </Button>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-4">
-                <p className="whitespace-pre-wrap">
+                <p className="whitespace-pre-wrap text-base">
                     {parseContent(content)}
                 </p>
                 {mediaUrl && (
@@ -76,20 +76,19 @@ export function PostCard({ username, userhandle, avatarUrl, time, content, media
                 )}
             </CardContent>
             <CardFooter className="p-4 pt-0 flex justify-between">
-                <div className="flex gap-4 text-muted-foreground">
-                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <div className="flex gap-1 text-muted-foreground">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full">
                         <Heart className="h-5 w-5"/>
                         <span>{likes}</span>
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full">
                         <MessageCircle className="h-5 w-5"/>
                         <span>{comments}</span>
                     </Button>
+                     <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full">
+                        <Share2 className="h-5 w-5"/>
+                    </Button>
                 </div>
-                 <Button variant="ghost" size="sm" className="flex items-center gap-2 text-muted-foreground">
-                    <Share2 className="h-5 w-5"/>
-                    <span>مشاركة</span>
-                </Button>
             </CardFooter>
         </Card>
     )

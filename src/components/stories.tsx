@@ -2,16 +2,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 
-// Dummy data for now, will be replaced with real data from Firestore
-const storiesData: any[] = [
-  // { username: 'عمر_عبدالله', avatarUrl: 'https://picsum.photos/100/100?a', active: true },
+const storiesData = [
+  { username: 'عمر', avatarUrl: 'https://picsum.photos/seed/omar/100/100', active: true },
+  { username: 'خالد', avatarUrl: 'https://picsum.photos/seed/khalid/100/100', active: true },
+  { username: 'مريم', avatarUrl: 'https://picsum.photos/seed/mariam/100/100', active: true },
+  { username: 'نورة', avatarUrl: 'https://picsum.photos/seed/noura/100/100', active: false },
+  { username: 'عبدالرحمن', avatarUrl: 'https://picsum.photos/seed/abdul/100/100', active: false },
+  { username: 'فهد', avatarUrl: 'https://picsum.photos/seed/fahad/100/100', active: false },
 ];
 
 export function Stories() {
   const { user } = useAuth();
   return (
     <div className="w-full">
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
           <div className="relative">
             <Avatar className="h-16 w-16 border-2 border-dashed border-muted-foreground">
@@ -27,10 +31,12 @@ export function Stories() {
 
         {storiesData.map((story) => (
           <div key={story.username} className="flex flex-col items-center gap-2 flex-shrink-0">
-            <Avatar className={`h-16 w-16 border-2 ${story.active ? 'border-accent' : 'border-border'}`}>
-              <AvatarImage src={story.avatarUrl} alt={story.username} data-ai-hint="person" />
-              <AvatarFallback>{story.username.charAt(0)}</AvatarFallback>
-            </Avatar>
+            <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
+                <Avatar className={`h-16 w-16 border-2 transition-all ${story.active ? 'border-accent' : 'border-muted'}`}>
+                <AvatarImage src={story.avatarUrl} alt={story.username} data-ai-hint="person" />
+                <AvatarFallback>{story.username.charAt(0)}</AvatarFallback>
+                </Avatar>
+            </button>
             <span className="text-xs font-medium">{story.username}</span>
           </div>
         ))}

@@ -16,6 +16,7 @@ import { useAuth } from "@/context/auth-context"
 import { auth } from "@/lib/firebase/config"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
+import { MoreHorizontal } from "lucide-react";
 
 export function UserNav() {
   const { user } = useAuth();
@@ -33,14 +34,21 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user.photoURL || undefined} alt="User avatar" data-ai-hint="person" />
-            <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
-          </Avatar>
+        <Button variant="ghost" className="w-full justify-start items-center p-2 h-auto rounded-full">
+            <div className="flex items-center gap-3">
+             <Avatar className="h-10 w-10">
+                <AvatarImage src={user.photoURL || undefined} alt="User avatar" data-ai-hint="person" />
+                <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <div className="text-right">
+                <p className="font-bold text-sm">{user.displayName}</p>
+                <p className="text-muted-foreground text-xs">@{user.email?.split('@')[0]}</p>
+            </div>
+            <MoreHorizontal className="h-5 w-5 mr-auto" />
+            </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56 mb-2" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{user.displayName}</p>
