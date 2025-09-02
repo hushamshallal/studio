@@ -53,7 +53,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
-    { href: '/messages', iconName: 'Mail', label: 'الرسائل' },
     { href: '/reels', iconName: 'Clapperboard', label: 'ريلز' },
     { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
     { href: '#', iconName: 'Users', label: 'المجالس', onClick: showComingSoonToast },
@@ -148,7 +147,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 border-r border-l w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                  <div className="sm:hidden flex-1" />
-                 <h1 className="flex-1 text-xl font-bold truncate text-center sm:text-right">{pageTitle}</h1>
+                 <h1 className="flex-1 text-xl font-bold truncate text-center">{pageTitle}</h1>
                   <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
