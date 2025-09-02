@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, runTransaction, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, runTransaction, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -87,6 +87,22 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
         if (!user || !currentUserData || newComment.trim() === '' || isPosting) return;
 
         setIsPosting(true);
+        const textToSend = newComment.trim();
+        setNewComment('');
+
+        // Optimistic UI update
+        const optimisticComment: Comment = {
+            id: `temp_${Date.now()}`,
+            authorId: user.uid,
+            authorName: currentUserData.displayName,
+            authorAvatar: currentUserData.photoURL,
+            text: textToSend,
+            createdAt: Timestamp.now(),
+            likes: 0,
+            replyCount: 0,
+        };
+        setComments(prev => [optimisticComment, ...prev]);
+
         const postRef = doc(db, 'posts', postId);
         const commentsRef = collection(postRef, 'comments');
 
@@ -95,7 +111,7 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 authorId: user.uid,
                 authorName: currentUserData.displayName,
                 authorAvatar: currentUserData.photoURL,
-                text: newComment.trim(),
+                text: textToSend,
                 createdAt: serverTimestamp(),
                 likes: 0,
                 replyCount: 0
@@ -113,8 +129,6 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 transaction.update(postRef, { comments: newCommentCount });
             });
 
-            setNewComment('');
-
         } catch (error) {
             console.error('Error adding comment:', error);
             toast({
@@ -122,6 +136,8 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 title: 'خطأ',
                 description: 'لم نتمكن من إضافة تعليقك. حاول مرة أخرى.',
             });
+            // Revert optimistic update on error
+            setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
         } finally {
             setIsPosting(false);
         }

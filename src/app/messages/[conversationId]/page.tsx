@@ -15,6 +15,7 @@ import {
   addDoc,
   serverTimestamp,
   setDoc,
+  Timestamp,
 } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ type Message = {
   id: string;
   senderId: string;
   text: string;
-  createdAt: { seconds: number; nanoseconds: number } | null;
+  createdAt: { seconds: number; nanoseconds: number } | null | Timestamp;
   post?: {
       id: string;
       authorName: string;
@@ -44,6 +45,7 @@ type UserProfile = {
   uid: string;
   displayName: string;
   photoURL: string;
+  username: string;
 };
 
 const MessageItem = ({ msg, isOwnMessage }: { msg: Message; isOwnMessage: boolean }) => {
@@ -54,10 +56,11 @@ const MessageItem = ({ msg, isOwnMessage }: { msg: Message; isOwnMessage: boolea
                 isOwnMessage ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none"
             )}>
                 {msg.post ? (
-                    <div className='bg-background/20 p-2 rounded-lg'>
+                     <div className='bg-background/20 p-2 rounded-lg w-64'>
                         <div className='text-xs font-semibold opacity-80 mb-1'>منشور تمت مشاركته</div>
                         <p className='text-sm font-bold'>{msg.post.authorName}</p>
                         <p className='text-xs opacity-90'>@{msg.post.authorHandle}</p>
+                         {msg.post.mediaUrl && <img src={msg.post.mediaUrl} alt="Post media" className="mt-2 rounded-md aspect-video object-cover" data-ai-hint="social media post" />}
                         <p className='mt-2 text-sm italic'>"{msg.post.content.substring(0, 100)}..."</p>
                     </div>
                 ) : (
@@ -74,6 +77,7 @@ export default function ConversationPage() {
   const router = useRouter();
   const conversationId = params.conversationId as string;
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -122,38 +126,43 @@ export default function ConversationPage() {
 
   useEffect(() => {
     // Scroll to the bottom when new messages arrive
-    if(scrollAreaRef.current){
-        const scrollableView = scrollAreaRef.current.children[0] as HTMLDivElement;
-        if(scrollableView){
-           scrollableView.scrollTop = scrollableView.scrollHeight;
-        }
+    if(viewportRef.current){
+        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }
   }, [messages]);
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || newMessage.trim() === '' || !recipient) return;
+    if (!user || newMessage.trim() === '' || !recipient || sending) return;
 
     setSending(true);
-
-    const messageData = {
-      senderId: user.uid,
-      text: newMessage.trim(),
-      createdAt: serverTimestamp(),
+    const textToSend = newMessage.trim();
+    setNewMessage('');
+    
+    // Optimistic UI update
+    const optimisticMessage: Message = {
+        id: `temp_${Date.now()}`,
+        senderId: user.uid,
+        text: textToSend,
+        createdAt: Timestamp.now(),
     };
+    setMessages(prev => [...prev, optimisticMessage]);
 
     const conversationRef = doc(db, 'conversations', conversationId);
     const messagesRef = collection(conversationRef, 'messages');
 
     try {
-        // Add user's message
+        const messageData = {
+            senderId: user.uid,
+            text: textToSend,
+            createdAt: serverTimestamp(),
+        };
+        
         await addDoc(messagesRef, messageData);
-        setNewMessage('');
-
-        // Update last message in conversation
+        
         await setDoc(conversationRef, {
-            lastMessage: messageData.text,
+            lastMessage: textToSend,
             lastMessageSender: user.uid,
             lastMessageTimestamp: serverTimestamp(),
         }, { merge: true });
@@ -164,25 +173,30 @@ export default function ConversationPage() {
                 role: msg.senderId === user.uid ? 'user' : 'model',
                 content: msg.text
             }));
-            chatHistory.push({ role: 'user', content: messageData.text });
+            chatHistory.push({ role: 'user', content: textToSend });
             
-            const botReply = await chat({ history: chatHistory });
-
-            const botMessageData = {
-                senderId: recipient.uid,
-                text: botReply.reply,
-                createdAt: serverTimestamp(),
-            };
-            await addDoc(messagesRef, botMessageData);
-            await setDoc(conversationRef, {
-                lastMessage: botMessageData.text,
-                lastMessageSender: recipient.uid,
-                lastMessageTimestamp: serverTimestamp(),
-            }, { merge: true });
+            // Don't await, let it run in the background
+            chat({ history: chatHistory }).then(async (botReply) => {
+                 const botMessageData = {
+                    senderId: recipient.uid,
+                    text: botReply.reply,
+                    createdAt: serverTimestamp(),
+                };
+                await addDoc(messagesRef, botMessageData);
+                await setDoc(conversationRef, {
+                    lastMessage: botMessageData.text,
+                    lastMessageSender: recipient.uid,
+                    lastMessageTimestamp: serverTimestamp(),
+                }, { merge: true });
+            }).catch(error => {
+                console.error('Error getting bot reply:', error);
+                 // Optionally, add an error message to the chat
+            });
         }
 
     } catch (error) {
         console.error('Error sending message:', error);
+        // Optionally, remove optimistic message or show an error state on it
     } finally {
         setSending(false);
     }
@@ -214,7 +228,7 @@ export default function ConversationPage() {
             <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => router.push('/messages')}>
                 <ArrowRight className="h-5 w-5" />
             </Button>
-            <Link href={`/u/${(recipient as any).username || ''}`} className='flex items-center gap-3'>
+            <Link href={`/u/${recipient.username || ''}`} className='flex items-center gap-3'>
                 <Avatar className="h-10 w-10">
                     <AvatarImage src={recipient.photoURL} alt={recipient.displayName} data-ai-hint="person" />
                     <AvatarFallback>{recipient.displayName.charAt(0)}</AvatarFallback>
@@ -222,7 +236,7 @@ export default function ConversationPage() {
                 <h2 className="font-bold text-lg">{recipient.displayName}</h2>
             </Link>
         </header>
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1" ref={scrollAreaRef} viewportRef={viewportRef}>
             <div className="p-4 space-y-4">
                 {messages.map(msg => (
                     <MessageItem key={msg.id} msg={msg} isOwnMessage={msg.senderId === user?.uid} />
@@ -236,7 +250,7 @@ export default function ConversationPage() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="اكتب رسالتك..."
                     className="flex-1 rounded-full bg-muted focus-visible:ring-1"
-                    disabled={sending}
+                    disabled={sending && newMessage === ''}
                 />
                 <Button type="submit" size="icon" className="rounded-full" disabled={sending || newMessage.trim() === ''}>
                     <Send className="h-5 w-5" />

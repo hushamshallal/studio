@@ -48,7 +48,7 @@ export default function MessagesLayout({
         <AppLayout>
           <div className="flex h-full">
             <aside className={cn(
-              "w-full sm:w-80 lg:w-96 flex-shrink-0 border-l",
+              "w-full sm:w-80 lg:w-[350px] flex-shrink-0 border-l",
               !isRootMessagesPage && "hidden sm:flex flex-col"
             )}>
               <div className="p-4 border-b">
