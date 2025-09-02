@@ -15,7 +15,7 @@ export default function ExplorePage() {
                 />
             </div>
             <div className="flex justify-center items-center h-64">
-                <p className="text-muted-foreground">لا توجد منشورات رائجة حالياً.</p>
+                <p className="text-muted-foreground">ابحث للعثور على المحتوى الرائج.</p>
             </div>
         </div>
     )

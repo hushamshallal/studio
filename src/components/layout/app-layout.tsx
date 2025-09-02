@@ -59,6 +59,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (pathname === '/explore') return 'استكشاف';
     if (pathname.startsWith('/u/')) return 'الملف الشخصي';
     if (pathname === '/notifications') return 'الإشعارات';
+    if (pathname === '/messages') return 'الرسائل';
     return 'سلام';
   }
 
@@ -127,7 +128,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="relative rounded-full">
                                 <Icons.Bell className="h-5 w-5" />
-                                {/* <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span> */}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="w-80 mt-2" align="end">
@@ -145,10 +145,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                           </DropdownMenuContent>
                        </DropdownMenu>
 
-                       <Button variant="ghost" size="icon" className="relative rounded-full">
-                          <Icons.Mail className="h-5 w-5" />
-                           {/* <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span> */}
-                      </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="relative rounded-full">
+                                    <Icons.Mail className="h-5 w-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-80 mt-2" align="end">
+                                <DropdownMenuLabel className="font-bold">الرسائل</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <div className="p-4 text-center text-sm text-muted-foreground">
+                                    <p>لا توجد رسائل جديدة.</p>
+                                </div>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <Link href="/messages" className="flex items-center justify-center cursor-pointer">
+                                        عرض الكل في الرسائل
+                                    </Link>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                   </div>
               </header>
               {children}
