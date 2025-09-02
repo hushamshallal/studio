@@ -114,7 +114,9 @@ export default function ProfilePage() {
         const unsubscribe = fetchUserProfile();
 
         return () => {
-            // This is just a placeholder, the actual unsubscribe is returned and handled by useEffect
+            if (unsubscribe && typeof unsubscribe === 'function') {
+                (unsubscribe as () => void)();
+            }
         };
     }, [username]);
 
@@ -186,7 +188,7 @@ export default function ProfilePage() {
                                 <p className="text-muted-foreground text-md">@{profileUser.username}</p>
                             </div>
 
-                            <p className="text-muted-foreground text-sm max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                            <p className="text-muted-foreground text-sm max-w-md text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                            
                             <div className="flex justify-center gap-6">
                                 <Stat value={userPosts.length} label="منشورات" />
