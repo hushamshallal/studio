@@ -84,12 +84,19 @@ export default function ProfilePage() {
                 const userData = querySnapshot.docs[0].data() as UserProfile;
                 setProfileUser(userData);
 
-                const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid), orderBy('createdAt', 'desc'));
+                const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid));
                 const unsubscribe = onSnapshot(postsQuery, (postsSnapshot) => {
                     const postsData = postsSnapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data()
                     } as Post));
+                    
+                    postsData.sort((a, b) => {
+                        const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(0);
+                        const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(0);
+                        return dateB.getTime() - dateA.getTime();
+                    });
+
                     setUserPosts(postsData);
                     setLoading(false);
                 }, (error) => {
@@ -281,3 +288,5 @@ export default function ProfilePage() {
         </>
     );
 };
+
+    
