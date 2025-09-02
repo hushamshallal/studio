@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Image, Mic, Video, Send } from 'lucide-react';
 import React, { useState } from "react";
 import { db } from "@/lib/firebase/config";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "./ui/textarea";
 
@@ -23,11 +23,16 @@ export function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
 
         setIsPosting(true);
         try {
+            // Fetch username from the user's document
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            const username = userDoc.exists() ? userDoc.data().username : user.email?.split('@')[0] || 'user';
+
             await addDoc(collection(db, 'posts'), {
                 authorId: user.uid,
                 authorName: user.displayName,
                 authorAvatar: user.photoURL,
-                authorHandle: user.email?.split('@')[0] || 'user',
+                authorHandle: username,
                 content: content.trim(),
                 mediaUrl: '',
                 mediaType: '',
