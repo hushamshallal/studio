@@ -188,7 +188,9 @@ export default function ProfilePage() {
                                 <p className="text-muted-foreground text-md">@{profileUser.username}</p>
                             </div>
 
-                            <p className="text-muted-foreground text-sm max-w-md text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                            <div className="max-w-md w-full">
+                               <p className="text-muted-foreground text-sm text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                            </div>
                            
                             <div className="flex justify-center gap-6">
                                 <Stat value={userPosts.length} label="منشورات" />
