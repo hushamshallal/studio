@@ -252,7 +252,7 @@ export default function ProfilePage() {
                             </div>
                             
                              <div className="max-w-md w-full">
-                               <p className="text-muted-foreground text-sm text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                               <p className="text-muted-foreground text-sm text-center">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                             </div>
                            
                             <div className="flex justify-center gap-6">
@@ -326,4 +326,5 @@ export default function ProfilePage() {
         </AppLayout>
     );
 };
+
 
