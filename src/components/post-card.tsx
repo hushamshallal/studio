@@ -17,9 +17,10 @@ import { ar } from 'date-fns/locale';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, runTransaction, onSnapshot } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { CommentSheet } from './comment-sheet';
 
 export type Post = {
     id: string;
@@ -70,7 +71,10 @@ export function PostCard({ post }: { post: Post }) {
     const { toast } = useToast();
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(post.likes);
+    const [commentCount, setCommentCount] = useState(post.comments);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
+    const [isCommentSheetOpen, setCommentSheetOpen] = useState(false);
+
 
     useEffect(() => {
       if (!user) return;
@@ -85,11 +89,12 @@ export function PostCard({ post }: { post: Post }) {
     }, [post.id, user]);
 
     useEffect(() => {
-        // Also listen for real-time updates on the post's like count
+        // Also listen for real-time updates on the post's like and comment count
         const postRef = doc(db, 'posts', post.id);
         const unsubscribe = onSnapshot(postRef, (doc) => {
             if (doc.exists()) {
-                setLikeCount(doc.data().likes);
+                setLikeCount(doc.data().likes || 0);
+                setCommentCount(doc.data().comments || 0);
             }
         });
         return () => unsubscribe();
@@ -155,6 +160,12 @@ export function PostCard({ post }: { post: Post }) {
     const isPortrait = post.mediaUrl?.includes('400/600');
 
     return (
+      <>
+        <CommentSheet 
+            postId={post.id}
+            isOpen={isCommentSheetOpen}
+            onOpenChange={setCommentSheetOpen}
+        />
         <Card className="overflow-hidden rounded-xl">
             <CardHeader className="flex flex-row items-center gap-4 p-4">
                 <Link href={`/u/${post.authorHandle}`}>
@@ -193,9 +204,9 @@ export function PostCard({ post }: { post: Post }) {
                         <Heart className={cn("h-5 w-5", isLiked && "fill-red-500 text-red-500")}/>
                         <span>{likeCount}</span>
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full" onClick={() => showComingSoonToast('التعليقات')}>
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full" onClick={() => setCommentSheetOpen(true)}>
                         <MessageCircle className="h-5 w-5"/>
-                        <span>{post.comments}</span>
+                        <span>{commentCount}</span>
                     </Button>
                      <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full" onClick={() => showComingSoonToast('المشاركة')}>
                         <Share2 className="h-5 w-5"/>
@@ -203,5 +214,6 @@ export function PostCard({ post }: { post: Post }) {
                 </div>
             </CardFooter>
         </Card>
+      </>
     )
 }
