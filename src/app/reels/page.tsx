@@ -2,19 +2,20 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MoreHorizontal, Play, Pause, Volume2, VolumeX, ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 const reelsData = [
   {
     id: 1,
     videoUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
     user: {
-      name: "مبدع المحتوى",
-      avatar: "https://picsum.photos/seed/user1/48/48",
-      handle: "@creator1"
+      name: "علياء",
+      avatar: "https://picsum.photos/seed/aliaa/48/48",
+      handle: "@aliaa"
     },
     caption: "لقطات رائعة من رحلتي الأخيرة! 🏞️ #سفر #طبيعة",
     likes: 1250,
@@ -24,9 +25,9 @@ const reelsData = [
     id: 2,
     videoUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
     user: {
-      name: "فنان كوميدي",
-      avatar: "https://picsum.photos/seed/user2/48/48",
-      handle: "@comic"
+      name: "بدر",
+      avatar: "https://picsum.photos/seed/badr/48/48",
+      handle: "@badr"
     },
     caption: "عندما تحاول طهي وصفة من الإنترنت 😂 #كوميديا #ضحك",
     likes: 3400,
@@ -36,9 +37,9 @@ const reelsData = [
     id: 3,
     videoUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     user: {
-      name: "خبير تقني",
-      avatar: "https://picsum.photos/seed/user3/48/48",
-      handle: "@techguru"
+      name: "جمانة",
+      avatar: "https://picsum.photos/seed/jumana/48/48",
+      handle: "@jumana"
     },
     caption: "أحدث الاختراعات التي ستغير العالم! 🚀 #تقنية",
     likes: 5600,
@@ -135,7 +136,7 @@ const ReelItem = ({ reel, isVisible }: { reel: typeof reelsData[0], isVisible: b
         </Button>
       </div>
       
-       <div className="absolute top-4 right-4">
+       <div className="absolute top-4 right-4 z-10">
             <Button variant="ghost" size="icon" className="text-white bg-black/30" onClick={(e) => { e.stopPropagation(); toggleMute(); }}>
                 {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </Button>
@@ -148,6 +149,7 @@ const ReelItem = ({ reel, isVisible }: { reel: typeof reelsData[0], isVisible: b
 export default function ReelsPage() {
     const containerRef = useRef<HTMLDivElement>(null);
     const [visibleReel, setVisibleReel] = useState(0);
+    const router = useRouter();
 
     const handleScroll = () => {
         if(containerRef.current){
@@ -159,10 +161,20 @@ export default function ReelsPage() {
     };
     
   return (
-    <div ref={containerRef} onScroll={handleScroll} className="h-full w-full overflow-y-auto snap-y snap-mandatory bg-black rounded-lg">
-        {reelsData.map((reel, index) => (
-            <ReelItem key={reel.id} reel={reel} isVisible={index === visibleReel} />
-        ))}
+    <div className="h-full w-full relative">
+        <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-4 left-4 z-10 text-white bg-black/30 rounded-full"
+            onClick={() => router.back()}
+        >
+            <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div ref={containerRef} onScroll={handleScroll} className="h-full w-full overflow-y-auto snap-y snap-mandatory bg-black rounded-lg">
+            {reelsData.map((reel, index) => (
+                <ReelItem key={reel.id} reel={reel} isVisible={index === visibleReel} />
+            ))}
+        </div>
     </div>
   );
 }
