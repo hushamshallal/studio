@@ -1,11 +1,11 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, doc, updateDoc, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot, runTransaction, DocumentReference } from 'firebase/firestore';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/layout/app-layout';
 import { EditProfileModal } from '@/components/modals/edit-profile-modal';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 type UserProfile = {
     uid: string;
@@ -58,89 +59,151 @@ export default function ProfilePage() {
     const params = useParams();
     const { user: currentUser } = useAuth();
     const username = params.username as string;
+    const { toast } = useToast();
 
     const [profileUser, setProfileUser] = useState<UserProfile | null>(null);
     const [userPosts, setUserPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
 
-    useEffect(() => {
+    const [followersCount, setFollowersCount] = useState(0);
+    const [followingCount, setFollowingCount] = useState(0);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isFollowLoading, setIsFollowLoading] = useState(false);
+
+
+    const fetchUserProfile = useCallback(async () => {
         if (!username) return;
+        setLoading(true);
+        try {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where("username", "==", username));
+            const querySnapshot = await getDocs(q);
 
-        const fetchUserProfile = async () => {
-            try {
-                setLoading(true);
-                const usersRef = collection(db, 'users');
-                const q = query(usersRef, where("username", "==", username));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    setProfileUser(null);
-                    setLoading(false);
-                    return;
-                }
-
+            if (querySnapshot.empty) {
+                setProfileUser(null);
+            } else {
                 const userData = querySnapshot.docs[0].data() as UserProfile;
                 setProfileUser(userData);
+                setFollowersCount(userData.followersCount || 0);
+                setFollowingCount(userData.followingCount || 0);
 
+                // Fetch posts
                 const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid));
-                const unsubscribe = onSnapshot(postsQuery, (postsSnapshot) => {
-                    const postsData = postsSnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    } as Post));
-                    
-                    postsData.sort((a, b) => {
-                        const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(0);
-                        const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(0);
-                        return dateB.getTime() - dateA.getTime();
-                    });
-
-                    setUserPosts(postsData);
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Error fetching posts:", error);
-                    setLoading(false);
-                });
-
-                return unsubscribe;
-
-            } catch (error) {
-                console.error("Error fetching user profile:", error);
-                setLoading(false);
+                const postsSnapshot = await getDocs(postsQuery);
+                const postsData = postsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                } as Post));
+                postsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+                setUserPosts(postsData);
             }
-        };
-
-        const unsubscribe = fetchUserProfile();
-
-        return () => {
-            if (unsubscribe && typeof unsubscribe === 'function') {
-                (unsubscribe as () => void)();
-            }
-        };
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+        } finally {
+            setLoading(false);
+        }
     }, [username]);
+    
+    // Check follow status
+    useEffect(() => {
+        if (!currentUser || !profileUser) return;
+        setIsFollowLoading(true);
+        const followRef = doc(db, 'users', currentUser.uid, 'following', profileUser.uid);
+        const unsubscribe = onSnapshot(followRef, (doc) => {
+            setIsFollowing(doc.exists());
+            setIsFollowLoading(false);
+        });
+        return () => unsubscribe();
+    }, [currentUser, profileUser]);
+
+
+    useEffect(() => {
+        fetchUserProfile();
+    }, [fetchUserProfile]);
+
 
     const handleProfileUpdate = async (details: { fullName: string; bio: string }, newAvatarFile?: string) => {
         if (!currentUser) return;
         
-        const userRef = doc(db, 'users', currentUser.uid);
-        const updatedData: Partial<UserProfile> = {
-            displayName: details.fullName,
-            bio: details.bio,
-        };
+        // This is a simplified update. In a real app, you'd handle file uploads to a service like Firebase Storage.
+        // For now, we assume `newAvatarFile` is a URL (or base64 for simplicity, though not ideal).
+        try {
+            const userRef = doc(db, 'users', currentUser.uid);
+            const updatedData: Partial<UserProfile> = {
+                displayName: details.fullName,
+                bio: details.bio,
+            };
+            if (newAvatarFile) {
+                updatedData.photoURL = newAvatarFile;
+            }
         
-        if (newAvatarFile) {
-            updatedData.photoURL = newAvatarFile;
+            await runTransaction(db, async (transaction) => {
+                transaction.update(userRef, updatedData);
+            });
+            
+            setProfileUser(prev => prev ? { ...prev, ...updatedData } : null);
+            setEditModalOpen(false);
+            toast({ title: "تم تحديث الملف الشخصي بنجاح!" });
+        } catch (error) {
+            console.error("Failed to update profile:", error);
+            toast({ variant: 'destructive', title: "خطأ", description: "فشل تحديث الملف الشخصي." });
         }
-      
-        await updateDoc(userRef, updatedData);
-        
-        setProfileUser(prev => prev ? { ...prev, ...updatedData } : null);
-        setEditModalOpen(false);
     };
 
+    const handleFollowToggle = async () => {
+        if (!currentUser || !profileUser || isFollowLoading) return;
+        setIsFollowLoading(true);
+
+        const currentUserRef = doc(db, 'users', currentUser.uid);
+        const profileUserRef = doc(db, 'users', profileUser.uid);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const currentUserDoc = await transaction.get(currentUserRef);
+                const profileUserDoc = await transaction.get(profileUserRef);
+
+                if (!currentUserDoc.exists() || !profileUserDoc.exists()) {
+                    throw new Error("User does not exist!");
+                }
+                
+                const followingRef = doc(db, `users/${currentUser.uid}/following/${profileUser.uid}`);
+                const followerRef = doc(db, `users/${profileUser.uid}/followers/${currentUser.uid}`);
+                
+                const currentFollowersCount = profileUserDoc.data().followersCount || 0;
+                const currentFollowingCount = currentUserDoc.data().followingCount || 0;
+
+                if (isFollowing) { // Unfollow
+                    transaction.delete(followingRef);
+                    transaction.delete(followerRef);
+                    transaction.update(profileUserRef, { followersCount: currentFollowersCount - 1 });
+                    transaction.update(currentUserRef, { followingCount: currentFollowingCount - 1 });
+                    setFollowersCount(currentFollowersCount - 1);
+                } else { // Follow
+                    transaction.set(followingRef, { timestamp: new Date() });
+                    transaction.set(followerRef, { timestamp: new Date() });
+                    transaction.update(profileUserRef, { followersCount: currentFollowersCount + 1 });
+                    transaction.update(currentUserRef, { followingCount: currentFollowingCount + 1 });
+                    setFollowersCount(currentFollowersCount + 1);
+                }
+            });
+            setIsFollowing(!isFollowing);
+
+        } catch (error) {
+            console.error("Error toggling follow:", error);
+            toast({
+                variant: 'destructive',
+                title: "حدث خطأ",
+                description: "لم نتمكن من إتمام العملية. حاول مرة أخرى."
+            });
+        } finally {
+            setIsFollowLoading(false);
+        }
+    };
+
+
     if (loading) {
-        return <ProfileSkeleton />;
+        return <AppLayout><ProfileSkeleton /></AppLayout>;
     }
 
     if (!profileUser) {
@@ -175,7 +238,7 @@ export default function ProfilePage() {
                 />
             )}
             <div className="w-full">
-                <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+                 <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
                      <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
                         <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg">
                             <AvatarImage src={profileUser.photoURL} alt={profileUser.displayName} data-ai-hint="person" />
@@ -187,15 +250,15 @@ export default function ProfilePage() {
                                 <h1 className="text-2xl font-bold">{profileUser.displayName}</h1>
                                 <p className="text-muted-foreground text-md">@{profileUser.username}</p>
                             </div>
-
-                            <div className="max-w-md w-full">
+                            
+                             <div className="max-w-md w-full">
                                <p className="text-muted-foreground text-sm text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                             </div>
                            
                             <div className="flex justify-center gap-6">
                                 <Stat value={userPosts.length} label="منشورات" />
-                                <Stat value={profileUser.followersCount || 0} label="المتابعون" />
-                                <Stat value={profileUser.followingCount || 0} label="يتابع" />
+                                <Stat value={followersCount} label="المتابعون" />
+                                <Stat value={followingCount} label="يتابع" />
                             </div>
 
                             {isOwnProfile ? (
@@ -211,7 +274,9 @@ export default function ProfilePage() {
                                 </div>
                             ) : (
                                  <div className="w-full pt-2">
-                                    <Button size="sm" className="w-40 rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                    <Button size="sm" className="w-40 rounded-full px-8" variant={isFollowing ? 'outline' : 'default'} onClick={handleFollowToggle} disabled={isFollowLoading}>
+                                        {isFollowLoading ? 'جارٍ...' : isFollowing ? 'إلغاء المتابعة' : 'متابعة'}
+                                    </Button>
                                 </div>
                             )}
                         </div>
