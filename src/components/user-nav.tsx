@@ -21,22 +21,28 @@ import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
+import { Skeleton } from "./ui/skeleton";
 
 export function UserNav({ isExpanded }: { isExpanded: boolean }) {
   const { user } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState('');
+  const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
     if (user) {
         const fetchUsername = async () => {
+            setLoading(true);
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             if (userDoc.exists()) {
                 setUsername(userDoc.data().username);
             }
+            setLoading(false);
         };
         fetchUsername();
+    } else {
+        setLoading(false);
     }
   }, [user]);
 
@@ -45,12 +51,37 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
     router.push('/login');
   };
 
+  if (loading) {
+    return (
+        <div className="flex items-center gap-3 p-2">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            {isExpanded && 
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                </div>
+            }
+        </div>
+    )
+  }
+
   if (!user) {
     return null;
   }
   
   const userHandle = username ? `@${username}` : (user.email ? `@${user.email.split('@')[0]}` : '');
 
+  // For mobile view, UserNav is just an avatar button opening the profile
+  if (!isExpanded && typeof window !== 'undefined' && window.innerWidth < 640) {
+      return (
+          <Link href={username ? `/u/${username}` : '#'}>
+              <Avatar className="h-9 w-9">
+                  <AvatarImage src={user.photoURL || undefined} alt="User avatar" data-ai-hint="person" />
+                  <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+          </Link>
+      );
+  }
 
   return (
     <DropdownMenu>
@@ -72,7 +103,7 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
                 <p className="text-muted-foreground text-xs">{userHandle}</p>
             </div>
             </div>
-            <MoreHorizontal className={cn("h-5 w-5 transition-opacity duration-200", !isExpanded && "opacity-0 hidden")} />
+            <MoreHorizontal className={cn("h-5 w-5 text-sidebar-foreground/80 transition-opacity duration-200", !isExpanded && "opacity-0 hidden")} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 mb-2" align="end" forceMount>

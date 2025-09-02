@@ -51,6 +51,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
+    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز', onClick: showComingSoonToast },
     { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
     { href: '#', iconName: 'Users', label: 'المجالس', onClick: showComingSoonToast },
     { href: '#', iconName: 'Mic', label: 'الديوان', onClick: showComingSoonToast },
@@ -70,6 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith('/u/')) return 'الملف الشخصي';
     if (pathname === '/notifications') return 'الإشعارات';
     if (pathname === '/messages') return 'الرسائل';
+    if (pathname === '/reels') return 'ريلز';
     return 'سلام';
   }
 
@@ -81,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             onMouseLeave={() => setSidebarExpanded(false)}
             className={cn(
               "group fixed top-0 right-0 h-screen flex-col border-l bg-sidebar text-sidebar-foreground p-2 pt-4 z-20 transition-all duration-300 ease-in-out hidden sm:flex",
-              isSidebarExpanded ? 'w-80' : 'w-24'
+              isSidebarExpanded ? 'w-64' : 'w-20'
             )}
           >
            <div className="flex flex-col h-full overflow-hidden">
@@ -99,10 +101,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     title: !isSidebarExpanded ? item.label : undefined,
                     className: cn(
                         'flex items-center gap-4 p-3 rounded-full text-lg transition-colors',
-                        isSidebarExpanded ? 'justify-start' : 'justify-center',
+                        isSidebarExpanded ? 'justify-start px-4' : 'justify-center',
                         isActive
-                          ? 'text-blue-500 font-bold'
-                          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-primary-foreground',
+                          ? 'text-primary bg-primary/10 font-bold'
+                          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
                         item.disabled && 'opacity-50 cursor-not-allowed'
                       ),
                       onClick: item.onClick
@@ -110,22 +112,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
                   return item.href === '#' || item.disabled ? (
                       <button key={item.label} {...commonProps} disabled={item.disabled}>
-                          {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
-                          <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
+                          {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0")} />}
+                          <span className={cn("whitespace-nowrap transition-opacity duration-200 text-base", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
                       </button>
                   ) : (
                       <Link key={item.label} href={item.href} {...commonProps}>
-                          {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
-                          <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
+                          {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0")} />}
+                          <span className={cn("whitespace-nowrap transition-opacity duration-200 text-base", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
                       </Link>
                   );
                 })}
               </nav>
               <div className="px-1 my-4">
                 <DialogTrigger asChild>
-                  <Button size="lg" className={cn("w-full rounded-full h-14 text-lg mb-6 font-bold bg-blue-500 hover:bg-blue-600 flex items-center", isSidebarExpanded ? "justify-start px-4" : "justify-center")}>
-                      <Icons.Plus className="h-7 w-7 shrink-0" />
-                      <span className={cn("transition-opacity duration-200 mr-2", !isSidebarExpanded && "opacity-0 hidden")}>نشر</span>
+                  <Button size="lg" className={cn("w-full rounded-full h-14 text-lg mb-6 font-bold bg-primary hover:bg-primary/90 flex items-center gap-4", isSidebarExpanded ? "justify-start px-4" : "justify-center")}>
+                      <Icons.PenSquare className="h-6 w-6 shrink-0" />
+                      <span className={cn("transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>نشر</span>
                   </Button>
                 </DialogTrigger>
               </div>
@@ -133,13 +135,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
            </div>
         </aside>
 
-        <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-24")}>
+        <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-20", isSidebarExpanded && "sm:mr-64")}>
           <main className="flex-1 border-r border-l max-w-2xl mx-auto w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                  <div className="flex items-center gap-4">
-                      <h1 className="text-xl font-bold">{getPageTitle()}</h1>
+                  <div className="flex items-center gap-4 sm:hidden">
+                    <UserNav isExpanded={false} />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="hidden sm:block">
+                     <h1 className="text-xl font-bold">{getPageTitle()}</h1>
+                  </div>
+                  <div className="flex items-center gap-1">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -181,22 +186,51 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="relative rounded-full sm:hidden">
+                                    <Icons.MoreVertical className="h-5 w-5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56 mt-2" align="end">
+                                <DropdownMenuItem onClick={showComingSoonToast}>
+                                    <Icons.Users className="w-4 h-4 ml-2" />
+                                    <span>المجالس</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={showComingSoonToast}>
+                                    <Icons.Mic className="w-4 h-4 ml-2" />
+                                    <span>الديوان</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                   </div>
               </header>
-              {children}
+              <div className="pb-16 sm:pb-0">
+                {children}
+              </div>
           </main>
           <aside className="w-80 hidden lg:block p-4 flex-shrink-0">
               <div className="sticky top-16">
                    <div className="bg-muted rounded-2xl p-4">
                        <h2 className="font-bold mb-4">أبرز الوسوم</h2>
-                       {/* Trends component can go here */}
+                       <div className="text-center text-muted-foreground py-8">
+                          <p>قريباً...</p>
+                       </div>
                   </div>
               </div>
           </aside>
         </div>
-        <MobileNav navItems={navItems} />
 
-        <DialogContent className="max-w-lg">
+        <DialogTrigger asChild>
+            <Button className="sm:hidden fixed bottom-20 right-4 z-50 h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90 flex items-center justify-center">
+                <Icons.PenSquare className="h-7 w-7" />
+            </Button>
+        </DialogTrigger>
+        
+        <MobileNav navItems={navItems} onPostClick={() => setCreatePostOpen(true)} />
+
+        <DialogContent className="max-w-lg w-[95%] sm:w-full rounded-2xl">
           <DialogHeader>
             <DialogTitle>إنشاء منشور جديد</DialogTitle>
           </DialogHeader>
