@@ -146,29 +146,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-20", isSidebarExpanded && "sm:mr-64")}>
           <main className="flex-1 border-r border-l w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                 <div className="sm:hidden flex items-center justify-start w-1/3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="relative rounded-full">
-                            <Icons.MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56 mt-2" align="start">
-                        <DropdownMenuItem onClick={showComingSoonToast}>
-                          <Icons.Users className="w-4 h-4 ml-2" />
-                          <span>المجالس</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={showComingSoonToast}>
-                          <Icons.Mic className="w-4 h-4 ml-2" />
-                          <span>الديوان</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                 </div>
-                  <div className="flex-1 text-center">
+                 <div className="flex-1 flex justify-end">
                      <h1 className="text-xl font-bold truncate">{pageTitle}</h1>
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2 w-1/3 justify-end">
+                  <div className="flex items-center gap-1 sm:gap-2">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="relative rounded-full">
