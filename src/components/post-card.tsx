@@ -21,6 +21,7 @@ import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { CommentSheet } from './comment-sheet';
+import { ShareSheet } from './share-sheet';
 
 export type Post = {
     id: string;
@@ -74,6 +75,7 @@ export function PostCard({ post }: { post: Post }) {
     const [commentCount, setCommentCount] = useState(post.comments);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
     const [isCommentSheetOpen, setCommentSheetOpen] = useState(false);
+    const [isShareSheetOpen, setShareSheetOpen] = useState(false);
 
 
     useEffect(() => {
@@ -148,14 +150,6 @@ export function PostCard({ post }: { post: Post }) {
         setIsLikeLoading(false);
       }
     };
-    
-    const showComingSoonToast = (feature: string) => {
-        toast({
-            title: "قريباً...",
-            description: `ميزة ${feature} قيد التطوير حالياً.`,
-            duration: 3000,
-        });
-    };
 
     const isPortrait = post.mediaUrl?.includes('400/600');
 
@@ -165,6 +159,11 @@ export function PostCard({ post }: { post: Post }) {
             postId={post.id}
             isOpen={isCommentSheetOpen}
             onOpenChange={setCommentSheetOpen}
+        />
+        <ShareSheet 
+            post={post}
+            isOpen={isShareSheetOpen}
+            onOpenChange={setShareSheetOpen}
         />
         <Card className="overflow-hidden rounded-xl">
             <CardHeader className="flex flex-row items-center gap-4 p-4">
@@ -208,7 +207,7 @@ export function PostCard({ post }: { post: Post }) {
                         <MessageCircle className="h-5 w-5"/>
                         <span>{commentCount}</span>
                     </Button>
-                     <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full" onClick={() => showComingSoonToast('المشاركة')}>
+                     <Button variant="ghost" size="sm" className="flex items-center gap-2 rounded-full" onClick={() => setShareSheetOpen(true)}>
                         <Share2 className="h-5 w-5"/>
                     </Button>
                 </div>

@@ -46,7 +46,7 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
     { href: '#', iconName: 'Plus', label: 'نشر', isCenter: true },
-    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز', onClick: showComingSoonToast },
+    { href: '/messages', iconName: 'Mail', label: 'الرسائل' },
     { href: username ? `/u/${username}` : '/login', iconName: 'User', label: 'الملف الشخصي', disabled: !user || !username }
   ];
 
@@ -71,7 +71,7 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
           }
 
           const LucideIcon = Icons[item.iconName as keyof typeof Icons];
-          const isActive = pathname === item.href;
+          const isActive = item.href !== '/' && pathname.startsWith(item.href) || pathname === item.href;
           
           return (
             <Link

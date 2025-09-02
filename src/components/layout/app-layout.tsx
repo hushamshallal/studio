@@ -53,6 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
+    { href: '/messages', iconName: 'Mail', label: 'الرسائل' },
     { href: '/reels', iconName: 'Clapperboard', label: 'ريلز' },
     { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
     { href: '#', iconName: 'Users', label: 'المجالس', onClick: showComingSoonToast },
@@ -72,7 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (pathname === '/explore') return 'استكشاف';
     if (pathname.startsWith('/u/')) return 'الملف الشخصي';
     if (pathname === '/notifications') return 'الإشعارات';
-    if (pathname === '/messages') return 'الرسائل';
+    if (pathname.startsWith('/messages')) return 'الرسائل';
     if (pathname === '/reels') return 'ريلز';
     if (pathname === '/settings') return 'الإعدادات';
     return 'سلام';
@@ -101,7 +102,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <nav className="flex flex-col gap-2 flex-1 items-stretch">
                 {navItems.map((item) => {
                   const LucideIcon = (Icons as any)[item.iconName];
-                  const isActive = pathname === item.href;
+                  const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                   
                   const commonProps = {
                     title: !isSidebarExpanded ? item.label : undefined,
@@ -146,8 +147,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-20", isSidebarExpanded && "sm:mr-64")}>
           <main className="flex-1 border-r border-l w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                 <div className="flex-1" />
-                 <h1 className="flex-1 text-xl font-bold truncate text-center">{pageTitle}</h1>
+                 <div className="sm:hidden flex-1" />
+                 <h1 className="flex-1 text-xl font-bold truncate text-center sm:text-right">{pageTitle}</h1>
                   <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -192,7 +193,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </DropdownMenu>
                   </div>
               </header>
-              <div className="pb-16 sm:pb-0">
+              <div className="pb-16 sm:pb-0 h-[calc(100vh-65px)]">
                 {children}
               </div>
           </main>
