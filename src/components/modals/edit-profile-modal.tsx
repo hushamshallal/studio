@@ -143,5 +143,3 @@ export const EditProfileModal = ({ user, isOpen, onClose, onSave }: EditProfileM
         </>
     );
 }
-
-    

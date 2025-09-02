@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,6 +7,7 @@ import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase/config";
 import { collection, getDocs, limit, query, where } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 interface StoryUser {
   id: string;
@@ -42,6 +44,13 @@ export function Stories() {
     fetchUsers();
   }, [user]);
 
+  const StorySkeleton = () => (
+    <div className="flex flex-col items-center gap-2 flex-shrink-0 animate-pulse">
+        <Skeleton className="h-16 w-16 rounded-full" />
+        <Skeleton className="h-3 w-12 rounded-md" />
+    </div>
+  );
+
   return (
     <div className="w-full">
       <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
@@ -59,12 +68,7 @@ export function Stories() {
         </div>
         
         {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="flex flex-col items-center gap-2 flex-shrink-0 animate-pulse">
-                    <div className="h-16 w-16 bg-muted rounded-full"></div>
-                    <div className="h-3 w-12 bg-muted rounded-md"></div>
-                </div>
-            ))
+            Array.from({ length: 6 }).map((_, index) => <StorySkeleton key={index} />)
         ) : (
             storyUsers.map((storyUser) => (
               <div key={storyUser.id} className="flex flex-col items-center gap-2 flex-shrink-0">
