@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isCreatePostOpen, setCreatePostOpen] = useState(false);
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
   const [username, setUsername] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,12 +40,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, authLoading, router]);
 
+  const showComingSoonToast = () => {
+    toast({
+        title: "قريباً...",
+        description: "هذه الميزة قيد التطوير حالياً.",
+        duration: 3000,
+    })
+  }
+
   const navItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
     { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
-    { href: '#', iconName: 'Users', label: 'المجالس' },
-    { href: '#', iconName: 'Mic', label: 'الديوان' },
+    { href: '#', iconName: 'Users', label: 'المجالس', onClick: showComingSoonToast },
+    { href: '#', iconName: 'Mic', label: 'الديوان', onClick: showComingSoonToast },
   ];
 
   if (authLoading || !user) {
@@ -85,23 +95,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {navItems.map((item) => {
                   const LucideIcon = (Icons as any)[item.iconName];
                   const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.disabled ? '#' : item.href}
-                      title={!isSidebarExpanded ? item.label : undefined}
-                      className={cn(
+                  const commonProps = {
+                    key: item.label,
+                    title: !isSidebarExpanded ? item.label : undefined,
+                    className: cn(
                         'flex items-center gap-4 p-3 rounded-full text-lg transition-colors',
                         isSidebarExpanded ? 'justify-start' : 'justify-center',
                         isActive
                           ? 'text-blue-500 font-bold'
                           : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-primary-foreground',
                         item.disabled && 'opacity-50 cursor-not-allowed'
-                      )}
-                    >
-                      {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
-                      <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
-                    </Link>
+                      ),
+                      onClick: item.onClick
+                  };
+
+                  return item.href === '#' || item.disabled ? (
+                      <button {...commonProps} disabled={item.disabled}>
+                          {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
+                          <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
+                      </button>
+                  ) : (
+                      <Link href={item.href} {...commonProps}>
+                          {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
+                          <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
+                      </Link>
                   );
                 })}
               </nav>
