@@ -52,7 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
-    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز', onClick: showComingSoonToast },
+    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز' },
     { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
     { href: '#', iconName: 'Users', label: 'المجالس', onClick: showComingSoonToast },
     { href: '#', iconName: 'Mic', label: 'الديوان', onClick: showComingSoonToast },
@@ -142,13 +142,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-20", isSidebarExpanded && "sm:mr-64")}>
           <main className="flex-1 border-r border-l max-w-2xl mx-auto w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                  <div className="flex items-center gap-4 sm:hidden">
-                    {/* This is the top-left avatar on mobile that the user wants removed */}
-                  </div>
+                  
                   <div className="hidden sm:block">
                      <h1 className="text-xl font-bold">{getPageTitle()}</h1>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 sm:gap-2 ml-auto">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -225,12 +223,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
           </aside>
         </div>
-
-        <DialogTrigger asChild>
-            <Button className="sm:hidden fixed bottom-20 right-4 z-50 h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90 flex items-center justify-center">
-                <Icons.PenSquare className="h-7 w-7" />
-            </Button>
-        </DialogTrigger>
         
         <MobileNav onPostClick={() => setCreatePostOpen(true)} />
 
