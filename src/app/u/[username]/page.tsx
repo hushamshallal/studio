@@ -32,22 +32,21 @@ type UserProfile = {
 }
 
 const ProfileSkeleton = () => (
-    <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+        <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
             <Skeleton className="w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0" />
-            <div className="w-full space-y-3 mt-4 sm:mt-0">
-                <div className="flex items-center gap-4">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-9 w-24 rounded-md" />
-                </div>
-                <div className="flex gap-6">
+            <div className="w-full space-y-3 mt-4 sm:mt-0 flex flex-col items-center">
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-4 w-full max-w-md mt-2" />
+                <div className="flex gap-6 mt-2">
                     <Skeleton className="h-5 w-20" />
                     <Skeleton className="h-5 w-20" />
                     <Skeleton className="h-5 w-20" />
                 </div>
-                <div className="space-y-2">
-                    <Skeleton className="h-5 w-24" />
-                    <Skeleton className="h-4 w-full sm:w-3/4" />
+                 <div className="flex items-center gap-2 pt-2">
+                    <Skeleton className="h-9 w-32 rounded-md" />
+                    <Skeleton className="h-9 w-9 rounded-md" />
                 </div>
             </div>
         </div>
@@ -157,8 +156,8 @@ export default function ProfilePage() {
     const mediaPosts = userPosts.filter(p => p.mediaUrl);
 
     const Stat = ({ value, label }: { value: number, label: string }) => (
-        <div className="text-center sm:text-left">
-            <span className="font-bold text-lg sm:text-base">{value}</span>
+        <div className="text-center">
+            <span className="font-bold text-lg">{value}</span>
             <p className="text-sm text-muted-foreground">{label}</p>
         </div>
     );
@@ -174,75 +173,43 @@ export default function ProfilePage() {
                 />
             )}
             <div className="w-full">
-                <div className="p-4 sm:p-6 lg:p-8">
-                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-10 max-w-4xl mx-auto">
-                        <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg shrink-0">
+                <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+                     <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
+                        <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg">
                             <AvatarImage src={profileUser.photoURL} alt={profileUser.displayName} data-ai-hint="person" />
                             <AvatarFallback>{profileUser.displayName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         
-                        <div className="w-full flex flex-col items-center sm:items-start space-y-4">
-                             {/* Mobile Header */}
-                             <div className="sm:hidden text-center space-y-4">
-                                <div>
-                                    <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
-                                    <p className="text-muted-foreground">@{profileUser.username}</p>
-                                </div>
-                                <div className="flex justify-center gap-6">
-                                    <Stat value={userPosts.length} label="منشورات" />
-                                    <Stat value={profileUser.followersCount || 0} label="المتابعون" />
-                                    <Stat value={profileUser.followingCount || 0} label="يتابع" />
-                                </div>
-                                <p className="text-muted-foreground text-sm max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
-                                {isOwnProfile ? (
-                                    <div className="flex items-center gap-2 pt-2">
-                                        <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
-                                            تعديل الملف
-                                        </Button>
-                                         <Button variant="ghost" size="icon" className="rounded-full" asChild>
-                                            <Link href="/settings">
-                                                <Settings className="w-5 h-5" />
-                                            </Link>
-                                         </Button>
-                                    </div>
-                                ) : (
-                                     <div className="w-full pt-2">
-                                        <Button size="sm" className="w-full rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
-                                    </div>
-                                )}
-                             </div>
-
-                             {/* Desktop Header */}
-                            <div className="hidden sm:flex flex-col items-start gap-4 w-full">
-                                <div className="flex items-center gap-4">
-                                    <h2 className="text-2xl font-light">@{profileUser.username}</h2>
-                                    {isOwnProfile ? (
-                                        <div className="flex items-center gap-2">
-                                            <Button variant="outline" size="sm" className="rounded-md px-4" onClick={() => setEditModalOpen(true)}>
-                                                تعديل الملف الشخصي
-                                            </Button>
-                                             <Button variant="ghost" size="icon" className="rounded-md" asChild>
-                                                <Link href="/settings">
-                                                    <Settings className="w-5 h-5" />
-                                                </Link>
-                                             </Button>
-                                        </div>
-                                    ) : (
-                                        <Button size="sm" className="rounded-md px-6 bg-primary hover:bg-primary/90">متابعة</Button>
-                                    )}
-                                </div>
-                                
-                                <div className="flex justify-start gap-8">
-                                    <Stat value={userPosts.length} label="منشورات" />
-                                    <Stat value={profileUser.followersCount || 0} label="المتابعون" />
-                                    <Stat value={profileUser.followingCount || 0} label="يتابع" />
-                                </div>
-
-                                <div>
-                                    <h1 className="text-lg font-bold">{profileUser.displayName}</h1>
-                                    <p className="text-muted-foreground text-sm mt-1 max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
-                                </div>
+                        <div className="flex flex-col items-center space-y-4 text-center mt-4">
+                            <div>
+                                <h1 className="text-2xl font-bold">{profileUser.displayName}</h1>
+                                <p className="text-muted-foreground text-md">@{profileUser.username}</p>
                             </div>
+
+                            <p className="text-muted-foreground text-sm max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                           
+                            <div className="flex justify-center gap-6">
+                                <Stat value={userPosts.length} label="منشورات" />
+                                <Stat value={profileUser.followersCount || 0} label="المتابعون" />
+                                <Stat value={profileUser.followingCount || 0} label="يتابع" />
+                            </div>
+
+                            {isOwnProfile ? (
+                                <div className="flex items-center gap-2 pt-2">
+                                    <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
+                                        تعديل الملف
+                                    </Button>
+                                     <Button variant="ghost" size="icon" className="rounded-full" asChild>
+                                        <Link href="/settings">
+                                            <Settings className="w-5 h-5" />
+                                        </Link>
+                                     </Button>
+                                </div>
+                            ) : (
+                                 <div className="w-full pt-2">
+                                    <Button size="sm" className="w-40 rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
