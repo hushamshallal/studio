@@ -10,21 +10,16 @@ import { Button } from './ui/button';
 import { useAuth } from '@/context/auth-context';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { useToast } from '@/hooks/use-toast';
 
 interface MobileNavProps {
-  navItems: {
-    href: string;
-    iconName: keyof typeof Icons;
-    label: string;
-    disabled?: boolean;
-    onClick?: () => void;
-  }[];
   onPostClick: () => void;
 }
 
-export function MobileNav({ navItems, onPostClick }: MobileNavProps) {
+export function MobileNav({ onPostClick }: MobileNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [username, setUsername] = useState('');
 
   useEffect(() => {
@@ -39,11 +34,19 @@ export function MobileNav({ navItems, onPostClick }: MobileNavProps) {
     }
   }, [user]);
   
+  const showComingSoonToast = () => {
+    toast({
+        title: "قريباً...",
+        description: "هذه الميزة قيد التطوير حالياً.",
+        duration: 3000,
+    })
+  }
+
   const mobileNavItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
     { href: '#', iconName: 'Plus', label: 'نشر', isCenter: true },
-    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز', onClick: navItems.find(i => i.href === '/reels')?.onClick },
+    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز', onClick: showComingSoonToast },
     { href: username ? `/u/${username}` : '/login', iconName: 'User', label: 'الملف الشخصي', disabled: !user || !username }
   ];
 
@@ -76,7 +79,10 @@ export function MobileNav({ navItems, onPostClick }: MobileNavProps) {
               href={item.disabled ? '#' : item.href}
               onClick={(e) => {
                 if(item.disabled) e.preventDefault();
-                if(item.onClick) item.onClick();
+                if(item.onClick) {
+                    e.preventDefault();
+                    item.onClick();
+                }
               }}
               className={cn(
                 'flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground hover:text-primary',
