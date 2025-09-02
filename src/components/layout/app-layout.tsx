@@ -144,7 +144,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-20", isSidebarExpanded && "sm:mr-64")}>
-          <main className="flex-1 border-r border-l w-full">
+          <main className="flex-1 border-r border-l w-full max-w-[600px] mx-auto">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                  <div className="sm:hidden flex-1" />
                  <h1 className="flex-1 text-xl font-bold truncate text-center">{pageTitle}</h1>
@@ -196,16 +196,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {children}
               </div>
           </main>
-          <aside className="w-80 hidden lg:block p-4 flex-shrink-0">
-              <div className="sticky top-16">
-                   <div className="bg-muted rounded-2xl p-4">
-                       <h2 className="font-bold mb-4">أبرز الوسوم</h2>
-                       <div className="text-center text-muted-foreground py-8">
-                          <p>قريباً...</p>
-                       </div>
-                  </div>
-              </div>
-          </aside>
         </div>
         
         <MobileNav onPostClick={() => setCreatePostOpen(true)} />
