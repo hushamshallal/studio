@@ -5,13 +5,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, onSnapshot, orderBy } from 'firebase/firestore';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { PostCard, Post } from '@/components/post-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Grid3x3, List, UserPlus, Heart, MessageCircle, Settings } from 'lucide-react';
+import { Grid3x3, List, Settings, Heart, MessageCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/layout/app-layout';
 import { EditProfileModal } from '@/components/modals/edit-profile-modal';
@@ -33,22 +33,17 @@ type UserProfile = {
 
 const ProfileSkeleton = () => (
     <div className="p-4 sm:p-6 lg:p-8">
-        <div className="max-w-md mx-auto">
-            <div className="flex items-center gap-4 sm:gap-8">
-                <Skeleton className="w-24 h-24 md:w-32 md:h-32 rounded-full shrink-0" />
-                <div className="space-y-4 flex-1">
-                    <Skeleton className="h-6 w-32" />
-                    <div className="flex gap-4">
-                        <Skeleton className="h-5 w-20" />
-                        <Skeleton className="h-5 w-20" />
-                        <Skeleton className="h-5 w-20" />
-                    </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-8 max-w-4xl mx-auto">
+            <Skeleton className="w-24 h-24 md:w-36 md:h-36 rounded-full shrink-0 mx-auto sm:mx-0" />
+            <div className="space-y-4 flex-1 mt-4 sm:mt-0 text-center sm:text-start">
+                <Skeleton className="h-7 w-48 mx-auto sm:mx-0" />
+                <div className="flex gap-6 justify-center sm:justify-start">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-5 w-24" />
                     <Skeleton className="h-5 w-24" />
                 </div>
-            </div>
-            <div className="mt-6 space-y-2">
-                <Skeleton className="h-4 w-full" />
-                 <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-5 w-32 mx-auto sm:mx-0" />
+                <Skeleton className="h-4 w-full sm:w-2/3 mx-auto sm:mx-0" />
             </div>
         </div>
     </div>
@@ -65,55 +60,56 @@ export default function ProfilePage() {
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
 
-    const fetchUserProfile = async () => {
-        if (!username) return;
-        try {
-            setLoading(true);
-            const usersRef = collection(db, 'users');
-            const q = query(usersRef, where("username", "==", username));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                setProfileUser(null);
-                setLoading(false);
-                return;
-            }
-
-            const userData = querySnapshot.docs[0].data() as UserProfile;
-            setProfileUser(userData);
-
-            const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid));
-            const unsubscribe = onSnapshot(postsQuery, (postsSnapshot) => {
-                const postsData = postsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Post)).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds); // Sort descending
-                setUserPosts(postsData);
-                setLoading(false);
-            });
-
-            return () => unsubscribe();
-
-        } catch (error) {
-            console.error("Error fetching user profile:", error);
-            setLoading(false);
-        }
-    };
-    
     useEffect(() => {
+        if (!username) return;
+
+        const fetchUserProfile = async () => {
+            try {
+                setLoading(true);
+                const usersRef = collection(db, 'users');
+                const q = query(usersRef, where("username", "==", username));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    setProfileUser(null);
+                    setLoading(false);
+                    return;
+                }
+
+                const userData = querySnapshot.docs[0].data() as UserProfile;
+                setProfileUser(userData);
+
+                const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid), orderBy('createdAt', 'desc'));
+                const unsubscribe = onSnapshot(postsQuery, (postsSnapshot) => {
+                    const postsData = postsSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    } as Post));
+                    setUserPosts(postsData);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching posts:", error);
+                    setLoading(false);
+                });
+
+                return unsubscribe;
+
+            } catch (error) {
+                console.error("Error fetching user profile:", error);
+                setLoading(false);
+            }
+        };
+
         const unsubscribe = fetchUserProfile();
+
         return () => {
-             // NextJS will manage cleanup, but good practice to have it
+            // This is just a placeholder, the actual unsubscribe is returned and handled by useEffect
         };
     }, [username]);
 
     const handleProfileUpdate = async (details: { fullName: string; bio: string }, newAvatarFile?: string) => {
         if (!currentUser) return;
         
-        // This is a simplified version. In a real app, you'd upload the file to Firebase Storage first.
-        // For this example, we assume `newAvatarFile` is a data URL (base64) which we can store directly.
-        // This is not ideal for performance and should be replaced with a proper upload flow.
-
         const userRef = doc(db, 'users', currentUser.uid);
         const updatedData: Partial<UserProfile> = {
             displayName: details.fullName,
@@ -121,14 +117,11 @@ export default function ProfilePage() {
         };
         
         if (newAvatarFile) {
-            // In a real app: const avatarUrl = await uploadToStorage(newAvatarFile);
-            // For now:
             updatedData.photoURL = newAvatarFile;
         }
       
         await updateDoc(userRef, updatedData);
         
-        // Manually update the local state to show changes immediately
         setProfileUser(prev => prev ? { ...prev, ...updatedData } : null);
         setEditModalOpen(false);
     };
@@ -170,18 +163,18 @@ export default function ProfilePage() {
             )}
             <div className="w-full">
                 <div className="p-4 sm:p-6 lg:p-8">
-                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-8 max-w-2xl mx-auto">
-                        <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-md mx-auto sm:mx-0 shrink-0">
+                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-10 max-w-4xl mx-auto">
+                        <Avatar className="w-28 h-28 md:w-40 md:h-40 text-6xl border-4 border-background shadow-lg mx-auto sm:mx-0 shrink-0">
                             <AvatarImage src={profileUser.photoURL} alt={profileUser.displayName} data-ai-hint="person" />
                             <AvatarFallback>{profileUser.displayName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         
-                        <div className="w-full text-center sm:text-right mt-4 sm:mt-0">
-                            <div className="flex items-center justify-center sm:justify-between gap-4">
+                        <div className="w-full space-y-4 text-center sm:text-right mt-4 sm:mt-0">
+                            <div className="flex items-center justify-center sm:justify-start gap-4">
                                 <h2 className="text-2xl font-bold">@{profileUser.username}</h2>
                                 {isOwnProfile ? (
                                     <div className="flex items-center gap-2">
-                                        <Button variant="outline" className="rounded-full px-6" onClick={() => setEditModalOpen(true)}>
+                                        <Button variant="outline" className="rounded-full px-5" onClick={() => setEditModalOpen(true)}>
                                             تعديل الملف
                                         </Button>
                                          <Button variant="ghost" size="icon" className="rounded-full" asChild>
@@ -195,15 +188,15 @@ export default function ProfilePage() {
                                 )}
                             </div>
                             
-                            <div className="flex justify-around sm:justify-end sm:gap-8 my-4">
+                            <div className="flex justify-center sm:justify-start gap-8 my-4">
                                 <Stat value={userPosts.length} label="منشورات" />
                                 <Stat value={profileUser.followersCount || 0} label="المتابعون" />
                                 <Stat value={profileUser.followingCount || 0} label="يتابع" />
                             </div>
 
-                            <div>
+                            <div className="text-center sm:text-right">
                                 <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
-                                <p className="text-muted-foreground text-sm mt-1">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                                <p className="text-muted-foreground text-sm mt-1 max-w-md mx-auto sm:mx-0">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                             </div>
                         </div>
                     </div>
@@ -236,7 +229,7 @@ export default function ProfilePage() {
                            </div>
                         )}
                     </TabsContent>
-                    <TabsContent value="list" className="space-y-4 p-4">
+                    <TabsContent value="list" className="space-y-4 p-4 max-w-xl mx-auto">
                         {userPosts.length > 0 ? (
                             userPosts.map(post => <PostCard key={post.id} post={post} />)
                         ) : (
@@ -252,3 +245,5 @@ export default function ProfilePage() {
         </>
     );
 };
+
+    

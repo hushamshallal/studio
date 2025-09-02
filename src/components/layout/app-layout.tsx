@@ -79,7 +79,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const pageTitle = getPageTitle();
-  const isProfilePage = pathname.startsWith('/u/');
 
   return (
     <Dialog open={isCreatePostOpen} onOpenChange={setCreatePostOpen}>
@@ -145,50 +144,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className={cn("flex flex-1 transition-all duration-300 ease-in-out sm:mr-20", isSidebarExpanded && "sm:mr-64")}>
-          <main className="flex-1 border-r border-l max-w-2xl mx-auto w-full">
+          <main className="flex-1 border-r border-l w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-                 <div className="w-1/3 sm:hidden flex items-center justify-start">
-                    {isProfilePage && user?.uid === username ? (
-                       <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
-                          <Link href="/settings"><Settings className="h-5 w-5"/></Link>
-                       </Button>
-                    ) : (
-                       <DropdownMenu>
-                         <DropdownMenuTrigger asChild>
-                           <Button variant="ghost" size="icon" className="relative rounded-full">
-                               <Icons.MoreVertical className="h-5 w-5" />
-                           </Button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent className="w-56 mt-2" align="start">
-                           <DropdownMenuItem asChild>
-                             <Link href="/notifications" className="flex items-center">
-                               <Icons.Bell className="w-4 h-4 ml-2" />
-                               <span>الإشعارات</span>
-                             </Link>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem asChild>
-                             <Link href="/messages" className="flex items-center">
-                               <Icons.Mail className="w-4 h-4 ml-2" />
-                               <span>الرسائل</span>
-                             </Link>
-                           </DropdownMenuItem>
-                           <DropdownMenuSeparator/>
-                           <DropdownMenuItem onClick={showComingSoonToast}>
-                             <Icons.Users className="w-4 h-4 ml-2" />
-                             <span>المجالس</span>
-                           </DropdownMenuItem>
-                           <DropdownMenuItem onClick={showComingSoonToast}>
-                             <Icons.Mic className="w-4 h-4 ml-2" />
-                             <span>الديوان</span>
-                           </DropdownMenuItem>
-                         </DropdownMenuContent>
-                       </DropdownMenu>
-                    )}
+                 <div className="sm:hidden flex items-center justify-start w-1/3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="relative rounded-full">
+                            <Icons.MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56 mt-2" align="start">
+                        <DropdownMenuItem onClick={showComingSoonToast}>
+                          <Icons.Users className="w-4 h-4 ml-2" />
+                          <span>المجالس</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={showComingSoonToast}>
+                          <Icons.Mic className="w-4 h-4 ml-2" />
+                          <span>الديوان</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                  </div>
                   <div className="flex-1 text-center">
                      <h1 className="text-xl font-bold truncate">{pageTitle}</h1>
                   </div>
-                  <div className="hidden sm:flex items-center gap-1 sm:gap-2 w-1/3 justify-end">
+                  <div className="flex items-center gap-1 sm:gap-2 w-1/3 justify-end">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -231,7 +211,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </DropdownMenuContent>
                         </DropdownMenu>
                   </div>
-                   <div className="w-1/3 sm:hidden" />
               </header>
               <div className="pb-16 sm:pb-0">
                 {children}
@@ -261,3 +240,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </Dialog>
   );
 }
+
+    
