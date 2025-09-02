@@ -40,7 +40,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, authLoading, router]);
 
-  const showComingSoonToast = () => {
+  const showComingSoonToast = (e: React.MouseEvent) => {
+    e.preventDefault();
     toast({
         title: "قريباً...",
         description: "هذه الميزة قيد التطوير حالياً.",
@@ -97,6 +98,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {navItems.map((item) => {
                   const LucideIcon = (Icons as any)[item.iconName];
                   const isActive = pathname === item.href;
+                  
                   const commonProps = {
                     title: !isSidebarExpanded ? item.label : undefined,
                     className: cn(
@@ -110,13 +112,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       onClick: item.onClick
                   };
 
+                  const key = `nav-${item.label}`;
+
                   return item.href === '#' || item.disabled ? (
-                      <button key={item.label} {...commonProps} disabled={item.disabled}>
+                      <button key={key} {...commonProps} disabled={item.disabled}>
                           {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0")} />}
                           <span className={cn("whitespace-nowrap transition-opacity duration-200 text-base", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
                       </button>
                   ) : (
-                      <Link key={item.label} href={item.href} {...commonProps}>
+                      <Link key={key} href={item.href} {...commonProps}>
                           {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0")} />}
                           <span className={cn("whitespace-nowrap transition-opacity duration-200 text-base", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
                       </Link>
@@ -139,7 +143,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <main className="flex-1 border-r border-l max-w-2xl mx-auto w-full">
                <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                   <div className="flex items-center gap-4 sm:hidden">
-                    <UserNav isExpanded={false} />
+                    {/* This is the top-left avatar on mobile that the user wants removed */}
                   </div>
                   <div className="hidden sm:block">
                      <h1 className="text-xl font-bold">{getPageTitle()}</h1>
@@ -228,7 +232,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
         </DialogTrigger>
         
-        <MobileNav navItems={navItems} onPostClick={() => setCreatePostOpen(true)} />
+        <MobileNav onPostClick={() => setCreatePostOpen(true)} />
 
         <DialogContent className="max-w-lg w-[95%] sm:w-full rounded-2xl">
           <DialogHeader>

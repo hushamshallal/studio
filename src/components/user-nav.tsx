@@ -71,18 +71,6 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
   
   const userHandle = username ? `@${username}` : (user.email ? `@${user.email.split('@')[0]}` : '');
 
-  // For mobile view, UserNav is just an avatar button opening the profile
-  if (!isExpanded && typeof window !== 'undefined' && window.innerWidth < 640) {
-      return (
-          <Link href={username ? `/u/${username}` : '#'}>
-              <Avatar className="h-9 w-9">
-                  <AvatarImage src={user.photoURL || undefined} alt="User avatar" data-ai-hint="person" />
-                  <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-          </Link>
-      );
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
