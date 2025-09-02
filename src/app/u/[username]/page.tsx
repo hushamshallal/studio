@@ -33,17 +33,22 @@ type UserProfile = {
 
 const ProfileSkeleton = () => (
     <div className="p-4 sm:p-6 lg:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-8 max-w-4xl mx-auto">
-            <Skeleton className="w-24 h-24 md:w-36 md:h-36 rounded-full shrink-0 mx-auto sm:mx-0" />
-            <div className="space-y-4 flex-1 mt-4 sm:mt-0 text-center sm:text-start">
-                <Skeleton className="h-7 w-48 mx-auto sm:mx-0" />
-                <div className="flex gap-6 justify-center sm:justify-start">
-                    <Skeleton className="h-5 w-24" />
-                    <Skeleton className="h-5 w-24" />
-                    <Skeleton className="h-5 w-24" />
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 max-w-4xl mx-auto">
+            <Skeleton className="w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0" />
+            <div className="w-full space-y-3 mt-4 sm:mt-0">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-9 w-24 rounded-md" />
                 </div>
-                <Skeleton className="h-5 w-32 mx-auto sm:mx-0" />
-                <Skeleton className="h-4 w-full sm:w-2/3 mx-auto sm:mx-0" />
+                <div className="flex gap-6">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-20" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-4 w-full sm:w-3/4" />
+                </div>
             </div>
         </div>
     </div>
@@ -145,8 +150,8 @@ export default function ProfilePage() {
     const mediaPosts = userPosts.filter(p => p.mediaUrl);
 
     const Stat = ({ value, label }: { value: number, label: string }) => (
-        <div className="text-center transition-colors">
-            <span className="font-bold text-lg">{value}</span>
+        <div className="text-center sm:text-right">
+            <span className="font-bold text-lg sm:text-base">{value}</span>
             <p className="text-sm text-muted-foreground">{label}</p>
         </div>
     );
@@ -163,18 +168,25 @@ export default function ProfilePage() {
             )}
             <div className="w-full">
                 <div className="p-4 sm:p-6 lg:p-8">
-                     <div className="flex flex-col sm:flex-row sm:items-center sm:gap-10 max-w-4xl mx-auto">
-                        <Avatar className="w-28 h-28 md:w-40 md:h-40 text-6xl border-4 border-background shadow-lg mx-auto sm:mx-0 shrink-0">
+                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-10 max-w-4xl mx-auto">
+                        <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg shrink-0">
                             <AvatarImage src={profileUser.photoURL} alt={profileUser.displayName} data-ai-hint="person" />
                             <AvatarFallback>{profileUser.displayName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         
-                        <div className="w-full space-y-4 text-center sm:text-right mt-4 sm:mt-0">
-                            <div className="flex items-center justify-center sm:justify-start gap-4">
+                        <div className="w-full flex flex-col items-center sm:items-start space-y-4">
+                            {/* Mobile-only Name & Username */}
+                             <div className="sm:hidden text-center">
+                                <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
+                                <p className="text-muted-foreground">@{profileUser.username}</p>
+                            </div>
+
+                            {/* Desktop-only Header */}
+                            <div className="hidden sm:flex items-center gap-4 w-full">
                                 <h2 className="text-2xl font-bold">@{profileUser.username}</h2>
                                 {isOwnProfile ? (
                                     <div className="flex items-center gap-2">
-                                        <Button variant="outline" className="rounded-full px-5" onClick={() => setEditModalOpen(true)}>
+                                        <Button variant="outline" size="sm" className="rounded-full px-5" onClick={() => setEditModalOpen(true)}>
                                             تعديل الملف
                                         </Button>
                                          <Button variant="ghost" size="icon" className="rounded-full" asChild>
@@ -184,20 +196,44 @@ export default function ProfilePage() {
                                          </Button>
                                     </div>
                                 ) : (
-                                    <Button className="rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                    <Button size="sm" className="rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
                                 )}
                             </div>
                             
-                            <div className="flex justify-center sm:justify-start gap-8 my-4">
+                            <div className="flex justify-center sm:justify-start gap-8 my-2 sm:my-0 w-full">
                                 <Stat value={userPosts.length} label="منشورات" />
                                 <Stat value={profileUser.followersCount || 0} label="المتابعون" />
                                 <Stat value={profileUser.followingCount || 0} label="يتابع" />
                             </div>
 
-                            <div className="text-center sm:text-right">
+                             {/* Desktop-only Name & Bio */}
+                            <div className="hidden sm:block text-right">
                                 <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
-                                <p className="text-muted-foreground text-sm mt-1 max-w-md mx-auto sm:mx-0">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                                <p className="text-muted-foreground text-sm mt-1 max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                             </div>
+
+                             {/* Mobile-only Bio */}
+                            <p className="sm:hidden text-center text-muted-foreground text-sm max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                           
+                            {/* Mobile-only buttons */}
+                            {isOwnProfile && (
+                                <div className="sm:hidden flex items-center gap-2 pt-2">
+                                    <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
+                                        تعديل الملف
+                                    </Button>
+                                     <Button variant="ghost" size="icon" className="rounded-full" asChild>
+                                        <Link href="/settings">
+                                            <Settings className="w-5 h-5" />
+                                        </Link>
+                                     </Button>
+                                </div>
+                            )}
+                             {!isOwnProfile && (
+                                 <div className="sm:hidden w-full pt-2">
+                                    <Button size="sm" className="w-full rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 </div>
@@ -245,5 +281,3 @@ export default function ProfilePage() {
         </>
     );
 };
-
-    
