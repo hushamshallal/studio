@@ -157,7 +157,7 @@ export default function ProfilePage() {
     const mediaPosts = userPosts.filter(p => p.mediaUrl);
 
     const Stat = ({ value, label }: { value: number, label: string }) => (
-        <div className="text-center sm:text-right">
+        <div className="text-center sm:text-left">
             <span className="font-bold text-lg sm:text-base">{value}</span>
             <p className="text-sm text-muted-foreground">{label}</p>
         </div>
@@ -182,18 +182,21 @@ export default function ProfilePage() {
                         </Avatar>
                         
                         <div className="w-full flex flex-col items-center sm:items-start space-y-4">
-                            {/* Mobile-only Name & Username */}
-                             <div className="sm:hidden text-center">
-                                <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
-                                <p className="text-muted-foreground">@{profileUser.username}</p>
-                            </div>
-
-                            {/* Desktop-only Header */}
-                            <div className="hidden sm:flex items-center gap-4 w-full">
-                                <h2 className="text-2xl font-bold">@{profileUser.username}</h2>
+                             {/* Mobile Header */}
+                             <div className="sm:hidden text-center space-y-4">
+                                <div>
+                                    <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
+                                    <p className="text-muted-foreground">@{profileUser.username}</p>
+                                </div>
+                                <div className="flex justify-center gap-6">
+                                    <Stat value={userPosts.length} label="منشورات" />
+                                    <Stat value={profileUser.followersCount || 0} label="المتابعون" />
+                                    <Stat value={profileUser.followingCount || 0} label="يتابع" />
+                                </div>
+                                <p className="text-muted-foreground text-sm max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                                 {isOwnProfile ? (
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="sm" className="rounded-full px-5" onClick={() => setEditModalOpen(true)}>
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
                                             تعديل الملف
                                         </Button>
                                          <Button variant="ghost" size="icon" className="rounded-full" asChild>
@@ -203,44 +206,43 @@ export default function ProfilePage() {
                                          </Button>
                                     </div>
                                 ) : (
-                                    <Button size="sm" className="rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                     <div className="w-full pt-2">
+                                        <Button size="sm" className="w-full rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                    </div>
                                 )}
-                            </div>
-                            
-                            <div className="flex justify-center sm:justify-start gap-8 my-2 sm:my-0 w-full">
-                                <Stat value={userPosts.length} label="منشورات" />
-                                <Stat value={profileUser.followersCount || 0} label="المتابعون" />
-                                <Stat value={profileUser.followingCount || 0} label="يتابع" />
-                            </div>
+                             </div>
 
-                             {/* Desktop-only Name & Bio */}
-                            <div className="hidden sm:block text-right">
-                                <h1 className="text-xl font-bold">{profileUser.displayName}</h1>
-                                <p className="text-muted-foreground text-sm mt-1 max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
-                            </div>
-
-                             {/* Mobile-only Bio */}
-                            <p className="sm:hidden text-center text-muted-foreground text-sm max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
-                           
-                            {/* Mobile-only buttons */}
-                            {isOwnProfile && (
-                                <div className="sm:hidden flex items-center gap-2 pt-2">
-                                    <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
-                                        تعديل الملف
-                                    </Button>
-                                     <Button variant="ghost" size="icon" className="rounded-full" asChild>
-                                        <Link href="/settings">
-                                            <Settings className="w-5 h-5" />
-                                        </Link>
-                                     </Button>
+                             {/* Desktop Header */}
+                            <div className="hidden sm:flex flex-col items-start gap-4 w-full">
+                                <div className="flex items-center gap-4">
+                                    <h2 className="text-2xl font-light">@{profileUser.username}</h2>
+                                    {isOwnProfile ? (
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" className="rounded-md px-4" onClick={() => setEditModalOpen(true)}>
+                                                تعديل الملف الشخصي
+                                            </Button>
+                                             <Button variant="ghost" size="icon" className="rounded-md" asChild>
+                                                <Link href="/settings">
+                                                    <Settings className="w-5 h-5" />
+                                                </Link>
+                                             </Button>
+                                        </div>
+                                    ) : (
+                                        <Button size="sm" className="rounded-md px-6 bg-primary hover:bg-primary/90">متابعة</Button>
+                                    )}
                                 </div>
-                            )}
-                             {!isOwnProfile && (
-                                 <div className="sm:hidden w-full pt-2">
-                                    <Button size="sm" className="w-full rounded-full px-8 bg-primary hover:bg-primary/90">متابعة</Button>
+                                
+                                <div className="flex justify-start gap-8">
+                                    <Stat value={userPosts.length} label="منشورات" />
+                                    <Stat value={profileUser.followersCount || 0} label="المتابعون" />
+                                    <Stat value={profileUser.followingCount || 0} label="يتابع" />
                                 </div>
-                            )}
 
+                                <div>
+                                    <h1 className="text-lg font-bold">{profileUser.displayName}</h1>
+                                    <p className="text-muted-foreground text-sm mt-1 max-w-md">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -289,4 +291,3 @@ export default function ProfilePage() {
     );
 };
 
-    
