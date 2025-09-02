@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { PostCard, Post } from '@/components/post-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Grid3x3, List, UserPlus } from 'lucide-react';
+import { Grid3x3, List, UserPlus, Heart, MessageCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/layout/app-layout';
 import { EditProfileModal } from '@/components/modals/edit-profile-modal';
@@ -74,7 +74,7 @@ export default function ProfilePage() {
             setProfileUser(userData);
 
             // Fetch user posts
-            const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid), where("mediaUrl", "!=", null));
+            const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid));
             const postsSnapshot = await getDocs(postsQuery);
             const postsData = postsSnapshot.docs.map(doc => ({
                 id: doc.id,
@@ -131,6 +131,7 @@ export default function ProfilePage() {
     }
     
     const isOwnProfile = currentUser?.uid === profileUser.uid;
+    const mediaPosts = userPosts.filter(p => p.mediaUrl);
 
     const Stat = ({ value, label }: { value: number, label: string }) => (
         <div className="text-center transition-colors">
@@ -190,7 +191,7 @@ export default function ProfilePage() {
                     </TabsList>
                     <TabsContent value="grid" className="p-1">
                          <div className="grid grid-cols-3 gap-1">
-                            {userPosts.filter(p => p.mediaUrl).map(post => (
+                            {mediaPosts.map(post => (
                                 <div key={post.id} className="aspect-square relative group overflow-hidden">
                                     <Image src={post.mediaUrl!} alt="Post media" layout="fill" objectFit="cover" className="rounded-sm transition-transform duration-300 group-hover:scale-110" data-ai-hint="social media post" />
                                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
@@ -202,7 +203,7 @@ export default function ProfilePage() {
                                 </div>
                             ))}
                         </div>
-                         {userPosts.filter(p => p.mediaUrl).length === 0 && (
+                         {mediaPosts.length === 0 && (
                             <div className="text-center col-span-3 py-10">
                                 <Grid3x3 className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <h3 className="mt-4 text-lg font-semibold">لا توجد صور</h3>
@@ -226,5 +227,3 @@ export default function ProfilePage() {
         </AppLayout>
     );
 };
-
-    
