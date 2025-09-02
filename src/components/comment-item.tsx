@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
 import { ReplyItem, Reply } from './reply-item';
+import { Skeleton } from './ui/skeleton';
 
 export type Comment = {
     id: string;
@@ -217,7 +218,7 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                 <div className="flex items-center gap-4 px-1 mt-1.5">
                      <p className="text-xs text-muted-foreground">{timeAgo}</p>
                      <Button variant="ghost" size="sm" className="p-0 h-auto text-xs font-semibold text-muted-foreground" onClick={() => setShowReplyInput(!showReplyInput)}>
-                        {showReplyInput ? 'إلغاء' : 'رد'}
+                        {showReplyInput ? 'إخفاء الردود' : 'رد'}
                      </Button>
                      <button
                         onClick={handleLikeToggle}
@@ -230,8 +231,8 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                 </div>
 
                 {showReplyInput && (
-                    <div className="mt-2 pl-4 border-r-2 border-muted">
-                        <form onSubmit={handleAddReply} className="flex items-center gap-2 mb-2">
+                    <div className="mt-2 pl-4 border-r-2 border-muted space-y-3">
+                        <form onSubmit={handleAddReply} className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
                                 <AvatarImage src={currentUserData?.photoURL || ''} data-ai-hint="person" />
                                 <AvatarFallback>{currentUserData?.displayName?.charAt(0) || 'U'}</AvatarFallback>
@@ -248,7 +249,7 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                             </Button>
                         </form>
                         <div className="space-y-2">
-                            {repliesLoading && <p className="text-xs text-muted-foreground">جار تحميل الردود...</p>}
+                            {repliesLoading && <Skeleton className="h-12 w-full" />}
                             {replies.map(reply => (
                                 <ReplyItem key={reply.id} reply={reply} />
                             ))}
@@ -258,7 +259,7 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
 
                  {replyCount > 0 && !showReplyInput && (
                     <Button variant="link" size="sm" className="p-0 h-auto text-xs font-semibold text-primary" onClick={() => setShowReplyInput(true)}>
-                        عرض {replyCount} ردود
+                        عرض {replyCount} من الردود
                     </Button>
                 )}
 
