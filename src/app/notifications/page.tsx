@@ -60,7 +60,7 @@ export default function NotificationsPage() {
     const notifications = mockNotifications;
 
     return (
-        <div>
+        <AppLayout>
             {notifications && notifications.length > 0 ? (
                 <div className="divide-y">
                     {notifications.map(n => <NotificationItem key={n.id} notification={n} />)}
@@ -68,6 +68,6 @@ export default function NotificationsPage() {
             ) : (
                 <p className="p-8 text-center text-muted-foreground">لا توجد إشعارات بعد.</p>
             )}
-        </div>
+        </AppLayout>
     );
 };
