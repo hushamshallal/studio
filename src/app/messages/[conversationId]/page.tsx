@@ -76,7 +76,6 @@ export default function ConversationPage() {
   const { user } = useAuth();
   const router = useRouter();
   const conversationId = params.conversationId as string;
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,6 +83,12 @@ export default function ConversationPage() {
   const [recipient, setRecipient] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  
+  const scrollToBottom = () => {
+    if (viewportRef.current) {
+        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+    }
+  }
 
   useEffect(() => {
     if (!user || !conversationId) return;
@@ -116,6 +121,7 @@ export default function ConversationPage() {
         const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
         setMessages(msgs);
         setLoading(false);
+        setTimeout(scrollToBottom, 100);
     }, (error) => {
         console.error("Error fetching messages:", error);
         setLoading(false);
@@ -125,10 +131,7 @@ export default function ConversationPage() {
   }, [conversationId, user, router]);
 
   useEffect(() => {
-    // Scroll to the bottom when new messages arrive
-    if(viewportRef.current){
-        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
 
@@ -140,7 +143,6 @@ export default function ConversationPage() {
     const textToSend = newMessage.trim();
     setNewMessage('');
     
-    // Optimistic UI update
     const optimisticMessage: Message = {
         id: `temp_${Date.now()}`,
         senderId: user.uid,
@@ -148,6 +150,7 @@ export default function ConversationPage() {
         createdAt: Timestamp.now(),
     };
     setMessages(prev => [...prev, optimisticMessage]);
+    setTimeout(scrollToBottom, 0);
 
     const conversationRef = doc(db, 'conversations', conversationId);
     const messagesRef = collection(conversationRef, 'messages');
@@ -167,7 +170,6 @@ export default function ConversationPage() {
             lastMessageTimestamp: serverTimestamp(),
         }, { merge: true });
 
-        // If recipient is the bot, trigger the AI flow
         if (recipient.uid === 'salam_assistant_bot') {
             const chatHistory = messages.map(msg => ({
                 role: msg.senderId === user.uid ? 'user' : 'model',
@@ -175,7 +177,6 @@ export default function ConversationPage() {
             }));
             chatHistory.push({ role: 'user', content: textToSend });
             
-            // Don't await, let it run in the background
             chat({ history: chatHistory }).then(async (botReply) => {
                  const botMessageData = {
                     senderId: recipient.uid,
@@ -190,13 +191,12 @@ export default function ConversationPage() {
                 }, { merge: true });
             }).catch(error => {
                 console.error('Error getting bot reply:', error);
-                 // Optionally, add an error message to the chat
             });
         }
 
     } catch (error) {
         console.error('Error sending message:', error);
-        // Optionally, remove optimistic message or show an error state on it
+        setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
     } finally {
         setSending(false);
     }
@@ -236,7 +236,7 @@ export default function ConversationPage() {
                 <h2 className="font-bold text-lg">{recipient.displayName}</h2>
             </Link>
         </header>
-        <ScrollArea className="flex-1" ref={scrollAreaRef} viewportRef={viewportRef}>
+        <ScrollArea className="flex-1" viewportRef={viewportRef}>
             <div className="p-4 space-y-4">
                 {messages.map(msg => (
                     <MessageItem key={msg.id} msg={msg} isOwnMessage={msg.senderId === user?.uid} />
