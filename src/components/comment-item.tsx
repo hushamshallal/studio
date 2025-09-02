@@ -1,14 +1,18 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { useState, useEffect } from 'react';
+import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { Heart, MessageSquare } from 'lucide-react';
+import { Button } from './ui/button';
+import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export type Comment = {
     id: string;
@@ -20,8 +24,8 @@ export type Comment = {
         seconds: number;
         nanoseconds: number;
     };
+    likes: number;
 };
-
 
 const formatTimestamp = (timestamp: Comment['createdAt']) => {
     if (!timestamp) return '';
@@ -29,9 +33,16 @@ const formatTimestamp = (timestamp: Comment['createdAt']) => {
     return formatDistanceToNowStrict(date, { addSuffix: true, locale: ar });
 };
 
-export const CommentItem = ({ comment }: { comment: Comment }) => {
-    const timeAgo = formatTimestamp(comment.createdAt);
+export const CommentItem = ({ comment, postId }: { comment: Comment; postId: string }) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
+
     const [authorHandle, setAuthorHandle] = useState('');
+    const [isLiked, setIsLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(comment.likes);
+    const [isLikeLoading, setIsLikeLoading] = useState(false);
+
+    const timeAgo = formatTimestamp(comment.createdAt);
 
     useEffect(() => {
         const fetchUserHandle = async () => {
@@ -45,10 +56,72 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
         };
         fetchUserHandle();
     }, [comment.authorId]);
+    
+    // Listen for real-time updates on the comment's like count
+     useEffect(() => {
+        const commentRef = doc(db, 'posts', postId, 'comments', comment.id);
+        const unsubscribe = onSnapshot(commentRef, (doc) => {
+            if (doc.exists()) {
+                setLikeCount(doc.data().likes || 0);
+            }
+        });
+        return () => unsubscribe();
+    }, [postId, comment.id]);
 
+    // Check if the current user has liked this comment
+    useEffect(() => {
+        if (!user) return;
+        const likeRef = doc(db, 'posts', postId, 'comments', comment.id, 'likes', user.uid);
+        const unsubscribe = onSnapshot(likeRef, (doc) => {
+            setIsLiked(doc.exists());
+        });
+        return () => unsubscribe();
+    }, [postId, comment.id, user]);
+
+    const handleLikeToggle = async () => {
+        if (!user) {
+            toast({ variant: "destructive", title: "يجب تسجيل الدخول أولاً" });
+            return;
+        }
+        if (isLikeLoading) return;
+        setIsLikeLoading(true);
+
+        const commentRef = doc(db, 'posts', postId, 'comments', comment.id);
+        const likeRef = doc(commentRef, 'likes', user.uid);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const commentDoc = await transaction.get(commentRef);
+                if (!commentDoc.exists()) {
+                    throw new Error("Comment does not exist!");
+                }
+                const currentLikeCount = commentDoc.data().likes || 0;
+                const likeDoc = await transaction.get(likeRef);
+
+                if (likeDoc.exists()) {
+                    // Unlike
+                    transaction.delete(likeRef);
+                    transaction.update(commentRef, { likes: currentLikeCount - 1 });
+                } else {
+                    // Like
+                    transaction.set(likeRef, { userId: user.uid, createdAt: new Date() });
+                    transaction.update(commentRef, { likes: currentLikeCount + 1 });
+                }
+            });
+        } catch (error) {
+            console.error("Failed to like comment:", error);
+            toast({ variant: "destructive", title: "حدث خطأ ما" });
+        } finally {
+            setIsLikeLoading(false);
+        }
+    };
+    
+    const handleReply = () => {
+        toast({ title: "قريباً...", description: "ميزة الرد على التعليقات قيد التطوير."})
+    }
 
     return (
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 p-2">
             <Link href={authorHandle ? `/u/${authorHandle}` : '#'}>
                 <Avatar className="h-10 w-10">
                     <AvatarImage src={comment.authorAvatar} alt={comment.authorName} data-ai-hint="person" />
@@ -65,7 +138,20 @@ export const CommentItem = ({ comment }: { comment: Comment }) => {
                     </div>
                     <p className="text-sm mt-1">{comment.text}</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 px-1">{timeAgo}</p>
+                <div className="flex items-center gap-4 px-1 mt-1.5">
+                     <p className="text-xs text-muted-foreground">{timeAgo}</p>
+                     <Button variant="ghost" size="sm" className="p-0 h-auto text-xs font-semibold text-muted-foreground" onClick={handleReply}>
+                        رد
+                     </Button>
+                     <button
+                        onClick={handleLikeToggle}
+                        disabled={isLikeLoading}
+                        className="flex items-center gap-1 text-muted-foreground hover:text-red-500 transition-colors"
+                     >
+                        <Heart className={cn("h-4 w-4", isLiked && "fill-red-500 text-red-500")} />
+                        <span className="text-xs font-semibold">{likeCount > 0 ? likeCount : ''}</span>
+                    </button>
+                </div>
             </div>
         </div>
     );
