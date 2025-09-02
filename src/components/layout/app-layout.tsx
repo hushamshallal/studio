@@ -57,6 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (pathname === '/') return 'الرئيسية';
     if (pathname === '/explore') return 'استكشاف';
     if (pathname.startsWith('/u/')) return 'الملف الشخصي';
+    if (pathname === '/notifications') return 'الإشعارات';
     return 'سلام';
   }
 
@@ -121,9 +122,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <h1 className="text-xl font-bold">{getPageTitle()}</h1>
                   </div>
                   <div className="flex items-center gap-2">
-                       <Button variant="ghost" size="icon" className="relative rounded-full">
-                          <Icons.Bell className="h-5 w-5" />
-                          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>
+                       <Button asChild variant="ghost" size="icon" className="relative rounded-full">
+                          <Link href="/notifications">
+                            <Icons.Bell className="h-5 w-5" />
+                            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>
+                          </Link>
                       </Button>
                        <Button variant="ghost" size="icon" className="relative rounded-full">
                           <Icons.Mail className="h-5 w-5" />
