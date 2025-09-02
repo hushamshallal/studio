@@ -83,13 +83,18 @@ export default function ProfilePage() {
             if (querySnapshot.empty) {
                 setProfileUser(null);
             } else {
-                const userData = querySnapshot.docs[0].data() as UserProfile;
-                setProfileUser(userData);
-                setFollowersCount(userData.followersCount || 0);
-                setFollowingCount(userData.followingCount || 0);
+                const userDocRef = querySnapshot.docs[0].ref;
+                
+                // Use onSnapshot for real-time updates on the profile user document
+                const unsubscribe = onSnapshot(userDocRef, (doc) => {
+                    const userData = doc.data() as UserProfile;
+                    setProfileUser(userData);
+                    setFollowersCount(userData.followersCount || 0);
+                    setFollowingCount(userData.followingCount || 0);
+                });
 
                 // Fetch posts
-                const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userData.uid));
+                const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userDocRef.id));
                 const postsSnapshot = await getDocs(postsQuery);
                 const postsData = postsSnapshot.docs.map(doc => ({
                     id: doc.id,
@@ -97,37 +102,38 @@ export default function ProfilePage() {
                 } as Post));
                 postsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
                 setUserPosts(postsData);
+
+                // Check initial follow status
+                if (currentUser && currentUser.uid !== userDocRef.id) {
+                    const followRef = doc(db, 'users', currentUser.uid, 'following', userDocRef.id);
+                    const followDoc = await getDoc(followRef);
+                    setIsFollowing(followDoc.exists());
+                }
+
+                return () => unsubscribe(); // Cleanup snapshot listener
             }
         } catch (error) {
             console.error("Error fetching user profile:", error);
+            toast({ variant: 'destructive', title: "خطأ", description: "فشل تحميل الملف الشخصي." });
         } finally {
             setLoading(false);
         }
-    }, [username]);
+    }, [username, currentUser, toast]);
     
-    // Check follow status
     useEffect(() => {
-        if (!currentUser || !profileUser) return;
-        setIsFollowLoading(true);
-        const followRef = doc(db, 'users', currentUser.uid, 'following', profileUser.uid);
-        const unsubscribe = onSnapshot(followRef, (doc) => {
-            setIsFollowing(doc.exists());
-            setIsFollowLoading(false);
-        });
-        return () => unsubscribe();
-    }, [currentUser, profileUser]);
-
-
-    useEffect(() => {
-        fetchUserProfile();
+        const unsubscribe = fetchUserProfile();
+        return () => {
+             // Clean up the subscription when the component unmounts
+            if (unsubscribe) {
+                unsubscribe.then(unsub => unsub && unsub());
+            }
+        }
     }, [fetchUserProfile]);
 
 
     const handleProfileUpdate = async (details: { fullName: string; bio: string }, newAvatarFile?: string) => {
         if (!currentUser) return;
         
-        // This is a simplified update. In a real app, you'd handle file uploads to a service like Firebase Storage.
-        // For now, we assume `newAvatarFile` is a URL (or base64 for simplicity, though not ideal).
         try {
             const userRef = doc(db, 'users', currentUser.uid);
             const updatedData: Partial<UserProfile> = {
@@ -138,9 +144,7 @@ export default function ProfilePage() {
                 updatedData.photoURL = newAvatarFile;
             }
         
-            await runTransaction(db, async (transaction) => {
-                transaction.update(userRef, updatedData);
-            });
+            await updateDoc(userRef, updatedData);
             
             setProfileUser(prev => prev ? { ...prev, ...updatedData } : null);
             setEditModalOpen(false);
@@ -160,31 +164,21 @@ export default function ProfilePage() {
 
         try {
             await runTransaction(db, async (transaction) => {
-                const currentUserDoc = await transaction.get(currentUserRef);
-                const profileUserDoc = await transaction.get(profileUserRef);
-
-                if (!currentUserDoc.exists() || !profileUserDoc.exists()) {
-                    throw new Error("User does not exist!");
-                }
-                
                 const followingRef = doc(db, `users/${currentUser.uid}/following/${profileUser.uid}`);
                 const followerRef = doc(db, `users/${profileUser.uid}/followers/${currentUser.uid}`);
                 
-                const currentFollowersCount = profileUserDoc.data().followersCount || 0;
-                const currentFollowingCount = currentUserDoc.data().followingCount || 0;
+                const isCurrentlyFollowing = (await transaction.get(followingRef)).exists();
 
-                if (isFollowing) { // Unfollow
+                if (isCurrentlyFollowing) { // Unfollow
                     transaction.delete(followingRef);
                     transaction.delete(followerRef);
-                    transaction.update(profileUserRef, { followersCount: currentFollowersCount - 1 });
-                    transaction.update(currentUserRef, { followingCount: currentFollowingCount - 1 });
-                    setFollowersCount(currentFollowersCount - 1);
+                    transaction.update(profileUserRef, { followersCount: (profileUser.followersCount || 0) - 1 });
+                    transaction.update(currentUserRef, { followingCount: (await transaction.get(currentUserRef)).data()?.followingCount - 1 });
                 } else { // Follow
                     transaction.set(followingRef, { timestamp: new Date() });
                     transaction.set(followerRef, { timestamp: new Date() });
-                    transaction.update(profileUserRef, { followersCount: currentFollowersCount + 1 });
-                    transaction.update(currentUserRef, { followingCount: currentFollowingCount + 1 });
-                    setFollowersCount(currentFollowersCount + 1);
+                    transaction.update(profileUserRef, { followersCount: (profileUser.followersCount || 0) + 1 });
+                    transaction.update(currentUserRef, { followingCount: (await transaction.get(currentUserRef)).data()?.followingCount + 1 });
                 }
             });
             setIsFollowing(!isFollowing);
@@ -239,46 +233,49 @@ export default function ProfilePage() {
             )}
             <div className="w-full">
                  <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
-                     <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
-                        <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg">
+                     <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-4 sm:gap-8 w-full max-w-4xl">
+                        <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg shrink-0">
                             <AvatarImage src={profileUser.photoURL} alt={profileUser.displayName} data-ai-hint="person" />
                             <AvatarFallback>{profileUser.displayName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         
-                        <div className="flex flex-col items-center space-y-4 text-center mt-4">
-                            <div>
-                                <h1 className="text-2xl font-bold">{profileUser.displayName}</h1>
-                                <p className="text-muted-foreground text-md">@{profileUser.username}</p>
-                            </div>
-                            
-                             <div className="max-w-md w-full">
-                               <p className="text-muted-foreground text-sm text-center">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                        <div className="flex flex-col items-center sm:items-start space-y-4 flex-grow">
+                            <div className='flex flex-col sm:flex-row items-center gap-4 w-full'>
+                                <div>
+                                    <h1 className="text-2xl font-bold">{profileUser.displayName}</h1>
+                                    <p className="text-muted-foreground text-md">@{profileUser.username}</p>
+                                </div>
+                                <div className='sm:mr-auto'>
+                                {isOwnProfile ? (
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
+                                            تعديل الملف
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="rounded-full" asChild>
+                                            <Link href="/settings">
+                                                <Settings className="w-5 h-5" />
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="w-full pt-2">
+                                        <Button size="sm" className="w-40 rounded-full px-8" variant={isFollowing ? 'outline' : 'default'} onClick={handleFollowToggle} disabled={isFollowLoading}>
+                                            {isFollowLoading ? 'جارٍ...' : isFollowing ? 'إلغاء المتابعة' : 'متابعة'}
+                                        </Button>
+                                    </div>
+                                )}
+                                </div>
                             </div>
                            
-                            <div className="flex justify-center gap-6">
+                            <div className="flex justify-center sm:justify-start gap-6">
                                 <Stat value={userPosts.length} label="منشورات" />
                                 <Stat value={followersCount} label="المتابعون" />
                                 <Stat value={followingCount} label="يتابع" />
                             </div>
 
-                            {isOwnProfile ? (
-                                <div className="flex items-center gap-2 pt-2">
-                                    <Button variant="outline" size="sm" className="flex-1 rounded-full px-5" onClick={() => setEditModalOpen(true)}>
-                                        تعديل الملف
-                                    </Button>
-                                     <Button variant="ghost" size="icon" className="rounded-full" asChild>
-                                        <Link href="/settings">
-                                            <Settings className="w-5 h-5" />
-                                        </Link>
-                                     </Button>
-                                </div>
-                            ) : (
-                                 <div className="w-full pt-2">
-                                    <Button size="sm" className="w-40 rounded-full px-8" variant={isFollowing ? 'outline' : 'default'} onClick={handleFollowToggle} disabled={isFollowLoading}>
-                                        {isFollowLoading ? 'جارٍ...' : isFollowing ? 'إلغاء المتابعة' : 'متابعة'}
-                                    </Button>
-                                </div>
-                            )}
+                             <div className="max-w-md w-full">
+                               <p className="text-muted-foreground text-sm text-center sm:text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -326,5 +323,3 @@ export default function ProfilePage() {
         </AppLayout>
     );
 };
-
-

@@ -96,7 +96,7 @@ export function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
                         <Mic className="h-5 w-5"/>
                     </Button>
                 </div>
-                <Button onClick={handlePost} disabled={isPosting || content.trim() === ''} className="rounded-full px-6 bg-blue-500 hover:bg-blue-600">
+                <Button onClick={handlePost} disabled={isPosting || content.trim() === ''} className="rounded-full px-6">
                     {isPosting ? 'جارِ النشر...' : 'نشر'}
                 </Button>
             </div>
