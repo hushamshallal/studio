@@ -38,11 +38,10 @@ Keep your responses concise and friendly. You are chatting with a user in the ap
 
 Here is the chat history:
 {{#each history}}
-{{#if (eq role 'user')}}User: {{content}}{{/if}}
-{{#if (eq role 'model')}}You: {{content}}{{/if}}
+{{role}}: {{content}}
 {{/each}}
 
-Based on the history, provide a suitable and helpful response.
+Based on the history, provide a suitable and helpful response as the 'model'.
 `,
 });
 
