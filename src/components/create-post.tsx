@@ -23,16 +23,20 @@ export function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
 
         setIsPosting(true);
         try {
-            // Fetch username from the user's document
+            // Fetch full user data from Firestore
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
-            const username = userDoc.exists() ? userDoc.data().username : user.email?.split('@')[0] || 'user';
+            
+            if (!userDoc.exists()) {
+                throw new Error("User data not found in Firestore.");
+            }
+            const userData = userDoc.data();
 
             await addDoc(collection(db, 'posts'), {
                 authorId: user.uid,
-                authorName: user.displayName,
-                authorAvatar: user.photoURL,
-                authorHandle: username,
+                authorName: userData.displayName,
+                authorAvatar: userData.photoURL,
+                authorHandle: userData.username,
                 content: content.trim(),
                 mediaUrl: '',
                 mediaType: '',

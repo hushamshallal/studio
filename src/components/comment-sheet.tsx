@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, runTransaction, doc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, runTransaction, doc, getDoc } from 'firebase/firestore';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -39,6 +39,19 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
     const [newComment, setNewComment] = useState('');
     const [isPosting, setIsPosting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentUserData, setCurrentUserData] = useState<any>(null);
+
+
+    useEffect(() => {
+        if (user) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    setCurrentUserData(docSnap.data());
+                }
+            })
+        }
+    }, [user]);
 
     useEffect(() => {
         if (!isOpen || !postId) return;
@@ -71,7 +84,7 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
     
     const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || newComment.trim() === '' || isPosting) return;
+        if (!user || !currentUserData || newComment.trim() === '' || isPosting) return;
 
         setIsPosting(true);
         const postRef = doc(db, 'posts', postId);
@@ -80,8 +93,8 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
         try {
              const newCommentData = {
                 authorId: user.uid,
-                authorName: user.displayName,
-                authorAvatar: user.photoURL,
+                authorName: currentUserData.displayName,
+                authorAvatar: currentUserData.photoURL,
                 text: newComment.trim(),
                 createdAt: serverTimestamp(),
                 likes: 0,
@@ -139,8 +152,8 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 <SheetFooter className="mt-auto py-2 border-t bg-background">
                     <form onSubmit={handleAddComment} className="flex items-center gap-2 w-full">
                         <Avatar className="h-9 w-9">
-                            <AvatarImage src={user?.photoURL || ''} data-ai-hint="person" />
-                            <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                            <AvatarImage src={currentUserData?.photoURL || ''} data-ai-hint="person" />
+                            <AvatarFallback>{currentUserData?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                         </Avatar>
                         <Input
                             value={newComment}

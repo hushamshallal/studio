@@ -51,7 +51,18 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
     const [replies, setReplies] = useState<Reply[]>([]);
     const [repliesLoading, setRepliesLoading] = useState(false);
     const [replyCount, setReplyCount] = useState(comment.replyCount || 0);
+    const [currentUserData, setCurrentUserData] = useState<any>(null);
 
+    useEffect(() => {
+        if (user) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    setCurrentUserData(docSnap.data());
+                }
+            })
+        }
+    }, [user]);
 
     const timeAgo = formatTimestamp(comment.createdAt);
 
@@ -148,7 +159,7 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
     
     const handleAddReply = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user || newReply.trim() === '' || isReplying) return;
+        if (!user || !currentUserData || newReply.trim() === '' || isReplying) return;
 
         setIsReplying(true);
         const commentRef = doc(db, 'posts', postId, 'comments', comment.id);
@@ -163,8 +174,8 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                 
                 const newReplyData = {
                     authorId: user.uid,
-                    authorName: user.displayName,
-                    authorAvatar: user.photoURL,
+                    authorName: currentUserData.displayName,
+                    authorAvatar: currentUserData.photoURL,
                     text: newReply.trim(),
                     createdAt: serverTimestamp(),
                     likes: 0
@@ -222,8 +233,8 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                     <div className="mt-2 pl-4 border-r-2 border-muted">
                         <form onSubmit={handleAddReply} className="flex items-center gap-2 mb-2">
                             <Avatar className="h-8 w-8">
-                                <AvatarImage src={user?.photoURL || ''} data-ai-hint="person" />
-                                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                <AvatarImage src={currentUserData?.photoURL || ''} data-ai-hint="person" />
+                                <AvatarFallback>{currentUserData?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
                             <Input 
                                 value={newReply}
