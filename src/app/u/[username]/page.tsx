@@ -164,7 +164,7 @@ export default function ProfilePage() {
     );
 
     return (
-        <>
+        <AppLayout>
             {isOwnProfile && profileUser && (
                 <EditProfileModal
                     user={profileUser}
@@ -287,7 +287,6 @@ export default function ProfilePage() {
                     </TabsContent>
                 </Tabs>
             </div>
-        </>
+        </AppLayout>
     );
 };
-
