@@ -4,10 +4,12 @@
 import Link from 'next/link';
 import * as Icons from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { useAuth } from '@/context/auth-context';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 interface MobileNavProps {
   navItems: {
@@ -23,14 +25,26 @@ interface MobileNavProps {
 export function MobileNav({ navItems, onPostClick }: MobileNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [username, setUsername] = useState('');
+
+  useEffect(() => {
+    if (user) {
+        const fetchUsername = async () => {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                setUsername(userDoc.data().username);
+            }
+        };
+        fetchUsername();
+    }
+  }, [user]);
   
   const mobileNavItems = [
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
-    // A placeholder for the center button
     { href: '#', iconName: 'Plus', label: 'نشر', isCenter: true },
     { href: '/reels', iconName: 'Clapperboard', label: 'ريلز', onClick: navItems.find(i => i.href === '/reels')?.onClick },
-    { href: user ? `/u/${user.uid}` : '/login', iconName: 'User', label: 'الملف الشخصي', disabled: !user }
+    { href: username ? `/u/${username}` : '/login', iconName: 'User', label: 'الملف الشخصي', disabled: !user || !username }
   ];
 
 
@@ -60,7 +74,10 @@ export function MobileNav({ navItems, onPostClick }: MobileNavProps) {
             <Link
               key={item.label}
               href={item.disabled ? '#' : item.href}
-              onClick={item.onClick}
+              onClick={(e) => {
+                if(item.disabled) e.preventDefault();
+                if(item.onClick) item.onClick();
+              }}
               className={cn(
                 'flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground hover:text-primary',
                 isActive && 'text-primary',
