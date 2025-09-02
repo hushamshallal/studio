@@ -96,7 +96,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   const LucideIcon = (Icons as any)[item.iconName];
                   const isActive = pathname === item.href;
                   const commonProps = {
-                    key: item.label,
                     title: !isSidebarExpanded ? item.label : undefined,
                     className: cn(
                         'flex items-center gap-4 p-3 rounded-full text-lg transition-colors',
@@ -110,12 +109,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   };
 
                   return item.href === '#' || item.disabled ? (
-                      <button {...commonProps} disabled={item.disabled}>
+                      <button key={item.label} {...commonProps} disabled={item.disabled}>
                           {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
                           <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
                       </button>
                   ) : (
-                      <Link href={item.href} {...commonProps}>
+                      <Link key={item.label} href={item.href} {...commonProps}>
                           {LucideIcon && <LucideIcon className={cn("h-6 w-6 shrink-0", isActive && "text-blue-500")} />}
                           <span className={cn("whitespace-nowrap transition-opacity duration-200", !isSidebarExpanded && "opacity-0 hidden")}>{item.label}</span>
                       </Link>
