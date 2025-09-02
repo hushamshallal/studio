@@ -7,12 +7,14 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
-import { Heart, MessageSquare } from 'lucide-react';
+import { collection, doc, getDoc, onSnapshot, runTransaction, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Heart } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Input } from './ui/input';
+import { ReplyItem, Reply } from './reply-item';
 
 export type Comment = {
     id: string;
@@ -25,6 +27,7 @@ export type Comment = {
         nanoseconds: number;
     };
     likes: number;
+    replyCount?: number;
 };
 
 const formatTimestamp = (timestamp: Comment['createdAt']) => {
@@ -41,6 +44,14 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(comment.likes);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
+    
+    const [showReplyInput, setShowReplyInput] = useState(false);
+    const [newReply, setNewReply] = useState('');
+    const [isReplying, setIsReplying] = useState(false);
+    const [replies, setReplies] = useState<Reply[]>([]);
+    const [repliesLoading, setRepliesLoading] = useState(false);
+    const [replyCount, setReplyCount] = useState(comment.replyCount || 0);
+
 
     const timeAgo = formatTimestamp(comment.createdAt);
 
@@ -57,12 +68,13 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
         fetchUserHandle();
     }, [comment.authorId]);
     
-    // Listen for real-time updates on the comment's like count
+    // Listen for real-time updates on the comment's like and reply count
      useEffect(() => {
         const commentRef = doc(db, 'posts', postId, 'comments', comment.id);
         const unsubscribe = onSnapshot(commentRef, (doc) => {
             if (doc.exists()) {
                 setLikeCount(doc.data().likes || 0);
+                setReplyCount(doc.data().replyCount || 0);
             }
         });
         return () => unsubscribe();
@@ -77,6 +89,24 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
         });
         return () => unsubscribe();
     }, [postId, comment.id, user]);
+
+    // Fetch replies when reply section is opened
+    useEffect(() => {
+        if (showReplyInput) {
+            setRepliesLoading(true);
+            const repliesRef = collection(db, 'posts', postId, 'comments', comment.id, 'replies');
+            const q = query(repliesRef, orderBy('createdAt', 'asc'));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                const repliesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Reply));
+                setReplies(repliesData);
+                setRepliesLoading(false);
+            }, (error) => {
+                console.error("Error fetching replies: ", error);
+                setRepliesLoading(false);
+            });
+            return () => unsubscribe();
+        }
+    }, [showReplyInput, postId, comment.id]);
 
     const handleLikeToggle = async () => {
         if (!user) {
@@ -116,9 +146,44 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
         }
     };
     
-    const handleReply = () => {
-        toast({ title: "قريباً...", description: "ميزة الرد على التعليقات قيد التطوير."})
+    const handleAddReply = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!user || newReply.trim() === '' || isReplying) return;
+
+        setIsReplying(true);
+        const commentRef = doc(db, 'posts', postId, 'comments', comment.id);
+        const repliesRef = collection(commentRef, 'replies');
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const commentDoc = await transaction.get(commentRef);
+                 if (!commentDoc.exists()) {
+                    throw new Error("Comment does not exist!");
+                }
+                
+                const newReplyData = {
+                    authorId: user.uid,
+                    authorName: user.displayName,
+                    authorAvatar: user.photoURL,
+                    text: newReply.trim(),
+                    createdAt: serverTimestamp(),
+                    likes: 0
+                };
+                
+                transaction.set(doc(repliesRef), newReplyData);
+                
+                const currentReplyCount = commentDoc.data().replyCount || 0;
+                transaction.update(commentRef, { replyCount: currentReplyCount + 1 });
+            });
+            setNewReply('');
+        } catch(error) {
+            console.error("Failed to add reply:", error);
+            toast({ variant: "destructive", title: "حدث خطأ أثناء إضافة الرد" });
+        } finally {
+            setIsReplying(false);
+        }
     }
+
 
     return (
         <div className="flex items-start gap-3 p-2">
@@ -140,8 +205,8 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                 </div>
                 <div className="flex items-center gap-4 px-1 mt-1.5">
                      <p className="text-xs text-muted-foreground">{timeAgo}</p>
-                     <Button variant="ghost" size="sm" className="p-0 h-auto text-xs font-semibold text-muted-foreground" onClick={handleReply}>
-                        رد
+                     <Button variant="ghost" size="sm" className="p-0 h-auto text-xs font-semibold text-muted-foreground" onClick={() => setShowReplyInput(!showReplyInput)}>
+                        {showReplyInput ? 'إلغاء' : 'رد'}
                      </Button>
                      <button
                         onClick={handleLikeToggle}
@@ -152,6 +217,40 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                         <span className="text-xs font-semibold">{likeCount > 0 ? likeCount : ''}</span>
                     </button>
                 </div>
+
+                {showReplyInput && (
+                    <div className="mt-2 pl-4 border-r-2 border-muted">
+                        <form onSubmit={handleAddReply} className="flex items-center gap-2 mb-2">
+                            <Avatar className="h-8 w-8">
+                                <AvatarImage src={user?.photoURL || ''} data-ai-hint="person" />
+                                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <Input 
+                                value={newReply}
+                                onChange={(e) => setNewReply(e.target.value)}
+                                placeholder="اكتب ردك..."
+                                className="flex-1 h-9 rounded-full bg-background"
+                                disabled={isReplying}
+                            />
+                             <Button type="submit" size="sm" className="rounded-full" disabled={isReplying || newReply.trim() === ''}>
+                                {isReplying ? '...' : 'رد'}
+                            </Button>
+                        </form>
+                        <div className="space-y-2">
+                            {repliesLoading && <p className="text-xs text-muted-foreground">جار تحميل الردود...</p>}
+                            {replies.map(reply => (
+                                <ReplyItem key={reply.id} reply={reply} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                 {replyCount > 0 && !showReplyInput && (
+                    <Button variant="link" size="sm" className="p-0 h-auto text-xs font-semibold text-primary" onClick={() => setShowReplyInput(true)}>
+                        عرض {replyCount} ردود
+                    </Button>
+                )}
+
             </div>
         </div>
     );

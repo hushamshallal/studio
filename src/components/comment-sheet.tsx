@@ -45,13 +45,14 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
 
         setIsLoading(true);
         const commentsRef = collection(db, 'posts', postId, 'comments');
-        const q = query(commentsRef, orderBy('createdAt', 'asc'));
+        const q = query(commentsRef, orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const commentsData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
                 likes: doc.data().likes || 0,
+                replyCount: doc.data().replyCount || 0,
             } as Comment));
             setComments(commentsData);
             setIsLoading(false);
@@ -83,7 +84,8 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 authorAvatar: user.photoURL,
                 text: newComment.trim(),
                 createdAt: serverTimestamp(),
-                likes: 0
+                likes: 0,
+                replyCount: 0
             };
             
             await addDoc(commentsRef, newCommentData);
