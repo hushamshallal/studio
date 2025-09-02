@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/components/layout/app-layout';
+import { PenSquare } from 'lucide-react';
 
 const PostSkeleton = () => (
     <div className="p-4 border rounded-xl space-y-4">
@@ -60,10 +61,16 @@ export default function HomePage() {
                     <PostSkeleton />
                     <PostSkeleton />
                 </>
-            ) : (
+            ) : posts.length > 0 ? (
                 posts.map(post => (
                     <PostCard key={post.id} post={post} />
                 ))
+            ) : (
+                <div className="text-center py-16">
+                    <PenSquare className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h2 className="mt-4 text-xl font-semibold">ابدأ رحلتك في سلام</h2>
+                    <p className="mt-2 text-muted-foreground">تابع الأشخاص وشارك أفكارك لترى آخر المستجدات هنا.</p>
+                </div>
             )}
           </div>
         </div>

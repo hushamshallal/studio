@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -122,15 +123,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       <h1 className="text-xl font-bold">{getPageTitle()}</h1>
                   </div>
                   <div className="flex items-center gap-2">
-                       <Button asChild variant="ghost" size="icon" className="relative rounded-full">
-                          <Link href="/notifications">
-                            <Icons.Bell className="h-5 w-5" />
-                            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>
-                          </Link>
-                      </Button>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="relative rounded-full">
+                                <Icons.Bell className="h-5 w-5" />
+                                {/* <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span> */}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-80 mt-2" align="end">
+                            <DropdownMenuLabel className="font-bold">الإشعارات</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              <p>لا توجد إشعارات جديدة.</p>
+                            </div>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                                <Link href="/notifications" className="flex items-center justify-center cursor-pointer">
+                                    عرض كل الإشعارات
+                                </Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                       </DropdownMenu>
+
                        <Button variant="ghost" size="icon" className="relative rounded-full">
                           <Icons.Mail className="h-5 w-5" />
-                           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>
+                           {/* <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span> */}
                       </Button>
                   </div>
               </header>
