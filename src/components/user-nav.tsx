@@ -17,7 +17,7 @@ import { useAuth } from "@/context/auth-context"
 import { auth, db } from "@/lib/firebase/config"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
@@ -108,7 +108,12 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
           <DropdownMenuItem asChild disabled={!username}>
             <Link href={username ? `/u/${username}` : '#'}>الملف الشخصي</Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild><Link href="#">الإعدادات</Link></DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/settings" className="flex items-center justify-between w-full">
+                <span>الإعدادات</span>
+                <Settings className="h-4 w-4" />
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
