@@ -80,7 +80,7 @@ export default function ProfilePage() {
 
 
     const fetchUserProfile = useCallback(async () => {
-        if (!username) return;
+        if (!username || !currentUser) return;
         setLoading(true);
         try {
             const usersRef = collection(db, 'users');
@@ -99,12 +99,16 @@ export default function ProfilePage() {
 
             const userDocRef = userDoc.ref;
             
-            const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userDocRef.id), orderBy('createdAt', 'desc'));
+            const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userDocRef.id));
             const postsSnapshot = await getDocs(postsQuery);
             const postsData = postsSnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Post));
+            
+            // Sort posts by createdAt client-side to avoid complex Firestore index
+            postsData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            
             setUserPosts(postsData);
 
             if (currentUser && currentUser.uid !== userDocRef.id) {
@@ -289,14 +293,14 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                            
+                             <div className="max-w-md w-full">
+                               <p className="text-muted-foreground text-sm text-center sm:text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
+                            </div>
+
                             <div className="flex justify-center sm:justify-start gap-6">
                                 <Stat value={userPosts.length} label="منشورات" />
                                 <Stat value={followersCount} label="المتابعون" />
                                 <Stat value={followingCount} label="يتابع" />
-                            </div>
-
-                             <div className="max-w-md w-full">
-                               <p className="text-muted-foreground text-sm text-center sm:text-right">{profileUser.bio || "لا يوجد وصف تعريفي."}</p>
                             </div>
                         </div>
                     </div>
