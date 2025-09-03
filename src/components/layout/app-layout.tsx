@@ -12,7 +12,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { UserNav } from '@/components/user-nav';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -31,13 +31,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!authLoading && !user) {
       router.push('/login');
     } else if (user) {
-        const fetchUsername = async () => {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-                setUsername(userDoc.data().username);
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setUsername(doc.data().username);
             }
-        };
-        fetchUsername();
+        });
+        return () => unsubscribe();
     }
   }, [user, authLoading, router]);
 
@@ -54,7 +54,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
     { href: '/reels', iconName: 'Clapperboard', label: 'ريلز' },
-    { href: `/u/${username}`, iconName: 'User', label: 'الملف الشخصي', disabled: !username },
+    { href: username ? `/u/${username}` : '#', iconName: 'User', label: 'الملف الشخصي', disabled: !username },
     { href: '#', iconName: 'Users', label: 'المجالس', onClick: showComingSoonToast },
     { href: '#', iconName: 'Mic', label: 'الديوان', onClick: showComingSoonToast },
   ];
@@ -101,7 +101,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <nav className="flex flex-col gap-2 flex-1 items-stretch">
                 {navItems.map((item) => {
                   const LucideIcon = (Icons as any)[item.iconName];
-                  const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                  const isActive = item.href !== '/' && item.href !=='#' ? pathname.startsWith(item.href) : pathname === item.href;
                   
                   const commonProps = {
                     title: !isSidebarExpanded ? item.label : undefined,

@@ -28,7 +28,7 @@ const PostSkeleton = () => (
 
 const seedUsers = [
     { 
-        uid: 'dummy_user_1', 
+        uid: 'user_aliaa', 
         displayName: 'علياء', 
         username: 'aliaa', 
         photoURL: 'https://picsum.photos/seed/aliaa/100/100',
@@ -37,7 +37,7 @@ const seedUsers = [
         followingCount: 75,
     },
     { 
-        uid: 'dummy_user_2', 
+        uid: 'user_badr', 
         displayName: 'بدر', 
         username: 'badr',
         photoURL: 'https://picsum.photos/seed/badr/100/100',
@@ -46,7 +46,7 @@ const seedUsers = [
         followingCount: 180,
     },
     { 
-        uid: 'dummy_user_3', 
+        uid: 'user_jumana', 
         displayName: 'جمانة', 
         username: 'jumana',
         photoURL: 'https://picsum.photos/seed/jumana/100/100',
@@ -54,38 +54,76 @@ const seedUsers = [
         followersCount: 890,
         followingCount: 250,
     },
+     { 
+        uid: 'user_sami', 
+        displayName: 'سامي', 
+        username: 'sami',
+        photoURL: 'https://picsum.photos/seed/sami/100/100',
+        bio: 'مهندس برمجيات شغوف بالذكاء الاصطناعي.',
+        followersCount: 450,
+        followingCount: 120,
+    },
+    { 
+        uid: 'user_layla', 
+        displayName: 'ليلى', 
+        username: 'layla',
+        photoURL: 'https://picsum.photos/seed/layla/100/100',
+        bio: 'مصممة أزياء ومؤسسة علامة تجارية محلية.',
+        followersCount: 1200,
+        followingCount: 300,
+    },
 ];
 
 const seedPosts = [
     {
-        authorId: 'dummy_user_1',
+        authorId: 'user_aliaa',
         content: 'يوم جميل في الجبال! الطبيعة دائمًا تلهم. #تصوير #طبيعة',
         mediaUrl: 'https://picsum.photos/600/400?random=1',
         mediaType: 'image',
     },
     {
-        authorId: 'dummy_user_1',
+        authorId: 'user_aliaa',
         content: 'ما هو كتابكم المفضل لهذا العام؟ أبحث عن توصيات جديدة.',
     },
     {
-        authorId: 'dummy_user_2',
+        authorId: 'user_badr',
         content: 'أشارككم اليوم وصفتي للبيتزا الإيطالية. بسيطة ولذيذة! 🍕 #طبخ #وصفات',
         mediaUrl: 'https://picsum.photos/400/600?random=2',
         mediaType: 'image',
     },
     {
-        authorId: 'dummy_user_2',
+        authorId: 'user_badr',
         content: 'قضيت اليوم في كتابة كود لمشروع جديد ومثير. قريباً سأشارككم المزيد من التفاصيل!',
     },
     {
-        authorId: 'dummy_user_3',
+        authorId: 'user_jumana',
         content: 'لوحة فنية جديدة مستوحاة من أحلام الليل. ما رأيكم؟ #فن_رقمي',
         mediaUrl: 'https://picsum.photos/600/400?random=3',
         mediaType: 'image',
     },
     {
-        authorId: 'dummy_user_3',
+        authorId: 'user_jumana',
         content: 'أحيانًا تكون أفضل الخطط هي عدم وجود خطة على الإطلاق.',
+    },
+    {
+        authorId: 'user_sami',
+        content: 'متحمس جدًا لإمكانيات نماذج اللغة الكبيرة في تغيير طريقة تفاعلنا مع التكنولوجيا. #AI #مستقبل_التقنية',
+    },
+    {
+        authorId: 'user_sami',
+        content: 'هل يوجد أفضل من قضاء المساء في حل مشكلة برمجية معقدة؟ #تحدي_برمجي',
+        mediaUrl: 'https://picsum.photos/600/400?random=4',
+        mediaType: 'image',
+    },
+    {
+        authorId: 'user_layla',
+        content: 'نظرة خاطفة على مجموعتي الجديدة! الألوان الترابية تسيطر على هذا الموسم. #موضة #تصميم',
+        mediaUrl: 'https://picsum.photos/400/600?random=5',
+        mediaType: 'image',
+    },
+    {
+        authorId: 'user_layla',
+        content: 'الإلهام يمكن أن يأتي من أي مكان. اليوم، جاء من نمط بلاط قديم في مقهى.',
     },
 ];
 
@@ -101,7 +139,7 @@ export default function HomePage() {
     // Seed data if posts collection is empty
     const seedData = async () => {
         const postsCollection = collection(db, 'posts');
-        const snapshot = await getDocs(query(postsCollection, orderBy('createdAt', 'desc')));
+        const snapshot = await getDocs(query(postsCollection));
         if (snapshot.empty) {
             console.log("No posts found, seeding data...");
             const batch = writeBatch(db);

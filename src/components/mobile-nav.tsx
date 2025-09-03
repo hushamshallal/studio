@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { useAuth } from '@/context/auth-context';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,13 +24,13 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
 
   useEffect(() => {
     if (user) {
-        const fetchUsername = async () => {
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-                setUsername(userDoc.data().username);
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setUsername(doc.data().username);
             }
-        };
-        fetchUsername();
+        });
+        return () => unsubscribe();
     }
   }, [user]);
   
@@ -47,7 +47,7 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
     { href: '#', iconName: 'Plus', label: 'نشر', isCenter: true },
     { href: '/messages', iconName: 'Mail', label: 'الرسائل' },
-    { href: username ? `/u/${username}` : '/login', iconName: 'User', label: 'الملف الشخصي', disabled: !user || !username }
+    { href: username ? `/u/${username}` : '#', iconName: 'User', label: 'الملف الشخصي', disabled: !user || !username }
   ];
 
 
@@ -71,7 +71,7 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
           }
 
           const LucideIcon = Icons[item.iconName as keyof typeof Icons];
-          const isActive = item.href !== '/' && pathname.startsWith(item.href) || pathname === item.href;
+          const isActive = item.href !== '/' && item.href !=='#' ? pathname.startsWith(item.href) : pathname === item.href;
           
           return (
             <Link
@@ -79,10 +79,6 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
               href={item.disabled ? '#' : item.href}
               onClick={(e) => {
                 if(item.disabled) e.preventDefault();
-                if(item.onClick) {
-                    e.preventDefault();
-                    item.onClick();
-                }
               }}
               className={cn(
                 'flex flex-col items-center gap-1 p-2 rounded-lg text-muted-foreground hover:text-primary',

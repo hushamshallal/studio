@@ -20,7 +20,7 @@ import { useRouter } from "next/navigation"
 import { MoreHorizontal, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import React, { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { Skeleton } from "./ui/skeleton";
 
 export function UserNav({ isExpanded }: { isExpanded: boolean }) {
@@ -32,15 +32,15 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
 
   useEffect(() => {
     if (user) {
-        const fetchUsername = async () => {
-            setLoading(true);
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) {
-                setUsername(userDoc.data().username);
+        setLoading(true);
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribe = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setUsername(doc.data().username);
             }
             setLoading(false);
-        };
-        fetchUsername();
+        });
+        return () => unsubscribe();
     } else {
         setLoading(false);
     }
@@ -70,6 +70,7 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
   }
   
   const userHandle = username ? `@${username}` : (user.email ? `@${user.email.split('@')[0]}` : '');
+  const profileLink = username ? `/u/${username}` : '#';
 
   return (
     <DropdownMenu>
@@ -106,7 +107,7 @@ export function UserNav({ isExpanded }: { isExpanded: boolean }) {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild disabled={!username}>
-            <Link href={username ? `/u/${username}` : '#'}>الملف الشخصي</Link>
+            <Link href={profileLink}>الملف الشخصي</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings" className="flex items-center justify-between w-full">
