@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, doc, onSnapshot, runTransaction, DocumentReference, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot, runTransaction, DocumentReference, updateDoc, getDoc, orderBy } from 'firebase/firestore';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -345,5 +345,3 @@ export default function ProfilePage() {
         </AppLayout>
     );
 };
-
-    
