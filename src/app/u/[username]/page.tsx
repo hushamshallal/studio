@@ -5,7 +5,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, doc, onSnapshot, runTransaction, DocumentReference } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot, runTransaction, DocumentReference, updateDoc, getDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -34,20 +34,27 @@ type UserProfile = {
 
 const ProfileSkeleton = () => (
     <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
-        <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
-            <Skeleton className="w-24 h-24 sm:w-36 sm:h-36 rounded-full shrink-0" />
-            <div className="w-full space-y-3 mt-4 sm:mt-0 flex flex-col items-center">
-                <Skeleton className="h-8 w-40" />
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-4 w-full max-w-md mt-2" />
-                <div className="flex gap-6 mt-2">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-4 sm:gap-8 w-full max-w-4xl">
+            <Skeleton className="w-28 h-28 md:w-36 md:h-36 rounded-full shrink-0" />
+            <div className="flex flex-col items-center sm:items-start space-y-4 flex-grow">
+                 <div className='flex flex-col sm:flex-row items-center gap-4 w-full'>
+                    <div>
+                        <Skeleton className="h-8 w-40" />
+                        <Skeleton className="h-5 w-32 mt-2" />
+                    </div>
+                    <div className='sm:mr-auto'>
+                        <Skeleton className="h-9 w-32 rounded-full" />
+                    </div>
+                </div>
+                           
+                <div className="flex justify-center sm:justify-start gap-6">
                     <Skeleton className="h-5 w-20" />
                     <Skeleton className="h-5 w-20" />
                     <Skeleton className="h-5 w-20" />
                 </div>
-                 <div className="flex items-center gap-2 pt-2">
-                    <Skeleton className="h-9 w-32 rounded-md" />
-                    <Skeleton className="h-9 w-9 rounded-md" />
+
+                 <div className="max-w-md w-full">
+                   <Skeleton className="h-4 w-full max-w-sm mt-2" />
                 </div>
             </div>
         </div>
@@ -82,36 +89,30 @@ export default function ProfilePage() {
 
             if (querySnapshot.empty) {
                 setProfileUser(null);
-            } else {
-                const userDocRef = querySnapshot.docs[0].ref;
-                
-                // Use onSnapshot for real-time updates on the profile user document
-                const unsubscribe = onSnapshot(userDocRef, (doc) => {
-                    const userData = doc.data() as UserProfile;
-                    setProfileUser(userData);
-                    setFollowersCount(userData.followersCount || 0);
-                    setFollowingCount(userData.followingCount || 0);
-                });
+                setLoading(false);
+                return;
+            } 
+            
+            const userDoc = querySnapshot.docs[0];
+            const userData = userDoc.data() as UserProfile;
+            setProfileUser(userData);
 
-                // Fetch posts
-                const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userDocRef.id));
-                const postsSnapshot = await getDocs(postsQuery);
-                const postsData = postsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Post));
-                postsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-                setUserPosts(postsData);
+            const userDocRef = userDoc.ref;
+            
+            const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userDocRef.id), orderBy('createdAt', 'desc'));
+            const postsSnapshot = await getDocs(postsQuery);
+            const postsData = postsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Post));
+            setUserPosts(postsData);
 
-                // Check initial follow status
-                if (currentUser && currentUser.uid !== userDocRef.id) {
-                    const followRef = doc(db, 'users', currentUser.uid, 'following', userDocRef.id);
-                    const followDoc = await getDoc(followRef);
-                    setIsFollowing(followDoc.exists());
-                }
-
-                return () => unsubscribe(); // Cleanup snapshot listener
+            if (currentUser && currentUser.uid !== userDocRef.id) {
+                const followRef = doc(db, 'users', currentUser.uid, 'following', userDocRef.id);
+                const followDoc = await getDoc(followRef);
+                setIsFollowing(followDoc.exists());
             }
+
         } catch (error) {
             console.error("Error fetching user profile:", error);
             toast({ variant: 'destructive', title: "خطأ", description: "فشل تحميل الملف الشخصي." });
@@ -121,14 +122,24 @@ export default function ProfilePage() {
     }, [username, currentUser, toast]);
     
     useEffect(() => {
-        const unsubscribe = fetchUserProfile();
-        return () => {
-             // Clean up the subscription when the component unmounts
-            if (unsubscribe) {
-                unsubscribe.then(unsub => unsub && unsub());
-            }
-        }
+        fetchUserProfile();
     }, [fetchUserProfile]);
+
+    useEffect(() => {
+        if (!profileUser?.uid) return;
+
+        const userDocRef = doc(db, 'users', profileUser.uid);
+        const unsubscribe = onSnapshot(userDocRef, (doc) => {
+            const data = doc.data();
+            if (data) {
+                setFollowersCount(data.followersCount || 0);
+                setFollowingCount(data.followingCount || 0);
+                setProfileUser(prev => prev ? { ...prev, ...data } : null);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [profileUser?.uid]);
 
 
     const handleProfileUpdate = async (details: { fullName: string; bio: string }, newAvatarFile?: string) => {
@@ -146,7 +157,6 @@ export default function ProfilePage() {
         
             await updateDoc(userRef, updatedData);
             
-            setProfileUser(prev => prev ? { ...prev, ...updatedData } : null);
             setEditModalOpen(false);
             toast({ title: "تم تحديث الملف الشخصي بنجاح!" });
         } catch (error) {
@@ -167,21 +177,32 @@ export default function ProfilePage() {
                 const followingRef = doc(db, `users/${currentUser.uid}/following/${profileUser.uid}`);
                 const followerRef = doc(db, `users/${profileUser.uid}/followers/${currentUser.uid}`);
                 
+                const profileUserDoc = await transaction.get(profileUserRef);
+                const currentUserDoc = await transaction.get(currentUserRef);
+
+                if (!profileUserDoc.exists() || !currentUserDoc.exists()) {
+                    throw "User does not exist!";
+                }
+
                 const isCurrentlyFollowing = (await transaction.get(followingRef)).exists();
+                const currentFollowersCount = profileUserDoc.data().followersCount || 0;
+                const currentUserFollowingCount = currentUserDoc.data().followingCount || 0;
+
 
                 if (isCurrentlyFollowing) { // Unfollow
                     transaction.delete(followingRef);
                     transaction.delete(followerRef);
-                    transaction.update(profileUserRef, { followersCount: (profileUser.followersCount || 0) - 1 });
-                    transaction.update(currentUserRef, { followingCount: (await transaction.get(currentUserRef)).data()?.followingCount - 1 });
+                    transaction.update(profileUserRef, { followersCount: currentFollowersCount - 1 });
+                    transaction.update(currentUserRef, { followingCount: currentUserFollowingCount - 1 });
+                    setIsFollowing(false);
                 } else { // Follow
                     transaction.set(followingRef, { timestamp: new Date() });
-                    transaction.set(followerRef, { timestamp: new Date() });
-                    transaction.update(profileUserRef, { followersCount: (profileUser.followersCount || 0) + 1 });
-                    transaction.update(currentUserRef, { followingCount: (await transaction.get(currentUserRef)).data()?.followingCount + 1 });
+                    transaction.set(followerRef, { timestamp: new Date(), uid: currentUser.uid, username: currentUser.displayName, photoURL: currentUser.photoURL });
+                    transaction.update(profileUserRef, { followersCount: currentFollowersCount + 1 });
+                    transaction.update(currentUserRef, { followingCount: currentUserFollowingCount + 1 });
+                    setIsFollowing(true);
                 }
             });
-            setIsFollowing(!isFollowing);
 
         } catch (error) {
             console.error("Error toggling follow:", error);
@@ -258,10 +279,11 @@ export default function ProfilePage() {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <div className="w-full pt-2">
-                                        <Button size="sm" className="w-40 rounded-full px-8" variant={isFollowing ? 'outline' : 'default'} onClick={handleFollowToggle} disabled={isFollowLoading}>
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <Button size="sm" className="w-32 rounded-full px-8" variant={isFollowing ? 'outline' : 'default'} onClick={handleFollowToggle} disabled={isFollowLoading}>
                                             {isFollowLoading ? 'جارٍ...' : isFollowing ? 'إلغاء المتابعة' : 'متابعة'}
                                         </Button>
+                                         <Button size="sm" variant="outline" className="w-32 rounded-full px-8">مراسلة</Button>
                                     </div>
                                 )}
                                 </div>
@@ -323,3 +345,5 @@ export default function ProfilePage() {
         </AppLayout>
     );
 };
+
+    
