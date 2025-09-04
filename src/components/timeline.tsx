@@ -33,9 +33,12 @@ export function Timeline({ initialPosts }: { initialPosts: Post[] }) {
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const postsData = querySnapshot.docs.map(doc => {
                 const data = doc.data();
+                // Convert Firebase Timestamp to a plain number for serialization
+                const createdAt = data.createdAt ? (data.createdAt.seconds * 1000 + data.createdAt.nanoseconds / 1000000) : Date.now();
                 return {
                     id: doc.id,
                     ...data,
+                    createdAt: createdAt,
                 } as Post
             });
             setPosts(postsData);
