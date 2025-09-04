@@ -18,6 +18,7 @@ import { Skeleton } from '../ui/skeleton';
 
 interface CommentSheetProps {
     postId: string;
+    postAuthorId: string;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
 }
@@ -32,7 +33,7 @@ const CommentSkeleton = () => (
     </div>
 )
 
-export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps) {
+export function CommentSheet({ postId, postAuthorId, isOpen, onOpenChange }: CommentSheetProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [comments, setComments] = useState<Comment[]>([]);
@@ -122,7 +123,7 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 replyCount: 0
             };
             
-            await addDoc(commentsRef, newCommentData);
+            const newCommentRef = await addDoc(commentsRef, newCommentData);
             
             await runTransaction(db, async (transaction) => {
                 const postDoc = await transaction.get(postRef);
@@ -132,6 +133,28 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 
                 const newCommentCount = (postDoc.data().comments || 0) + 1;
                 transaction.update(postRef, { comments: newCommentCount });
+
+                // Add notification
+                if (postAuthorId !== user.uid) {
+                    const notificationsRef = collection(db, 'users', postAuthorId, 'notifications');
+                    transaction.set(doc(notificationsRef), {
+                        type: 'comment',
+                        fromUser: {
+                            name: currentUserData.displayName,
+                            username: currentUserData.username,
+                            avatarUrl: currentUserData.photoURL,
+                        },
+                        post: {
+                            id: postId,
+                            content: postDoc.data().content,
+                        },
+                        comment: {
+                            text: textToSend,
+                        },
+                        timestamp: serverTimestamp(),
+                        isRead: false,
+                    })
+                }
             });
 
         } catch (error) {
@@ -191,4 +214,3 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
         </Sheet>
     );
 }
-

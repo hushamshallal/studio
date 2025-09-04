@@ -8,17 +8,28 @@ import { ar } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { Heart, MessageCircle, UserPlus, AtSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from './ui/skeleton';
 
 
 export type Notification = {
     id: string;
     type: 'like' | 'comment' | 'follow' | 'mention';
-    user: {
+    fromUser: {
         name: string;
+        username: string;
         avatarUrl: string;
     };
-    postContent?: string;
-    timestamp: Date;
+    post?: {
+        id: string;
+        content: string;
+    },
+    comment?: {
+        text: string;
+    },
+    timestamp: {
+        seconds: number;
+        nanoseconds: number;
+    };
     isRead: boolean;
 };
 
@@ -44,37 +55,67 @@ const getNotificationText = (notification: Notification) => {
     }
 }
 
+const getNotificationLink = (notification: Notification): string => {
+    switch(notification.type){
+        case 'follow':
+            return `/u/${notification.fromUser.username}`;
+        case 'like':
+        case 'comment':
+        case 'mention':
+            return `/post/${notification.post?.id}`; // Assuming a post page route
+        default:
+            return '#';
+    }
+}
+
 export const NotificationItem = ({ notification }: { notification: Notification }) => {
-    const timeAgo = formatDistanceToNowStrict(notification.timestamp, { addSuffix: true, locale: ar });
+    const timeAgo = notification.timestamp ? formatDistanceToNowStrict(new Date(notification.timestamp.seconds * 1000), { addSuffix: true, locale: ar }) : '';
+    const content = notification.comment?.text || notification.post?.content;
+    const link = getNotificationLink(notification);
+
 
     return (
-        <Link href="#" className={cn(
+        <Link href={link} className={cn(
             "flex items-start gap-4 p-4 transition-colors hover:bg-muted/50",
-            !notification.isRead && "bg-muted"
+            !notification.isRead && "bg-primary/5"
         )}>
             <div className="w-6 flex-shrink-0 pt-1">
                 {ICONS[notification.type]}
             </div>
             <div className="flex-1">
-                <Avatar className="h-8 w-8 mb-2">
-                    <AvatarImage src={notification.user.avatarUrl} alt={notification.user.name} />
-                    <AvatarFallback>{notification.user.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <Link href={`/u/${notification.fromUser.username}`}>
+                    <Avatar className="h-8 w-8 mb-2">
+                        <AvatarImage src={notification.fromUser.avatarUrl} alt={notification.fromUser.name} />
+                        <AvatarFallback>{notification.fromUser.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                </Link>
                 <p className="text-base">
-                    <span className="font-bold">{notification.user.name}</span>
+                    <Link href={`/u/${notification.fromUser.username}`} className="font-bold hover:underline">{notification.fromUser.name}</Link>
                     {' '}
                     {getNotificationText(notification)}
                 </p>
-                {notification.postContent && (
+                {content && (
                      <p className="text-sm text-muted-foreground mt-1 pl-2 border-r-2 pr-2">
-                        "{notification.postContent}"
+                        "{content.substring(0, 70)}..."
                     </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-2">{timeAgo}</p>
             </div>
             {!notification.isRead && (
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 self-center" />
+                <div className="w-2.5 h-2.5 rounded-full bg-primary self-center" />
             )}
         </Link>
     );
 };
+
+
+export const NotificationSkeleton = () => (
+    <div className="flex items-start gap-4 p-4">
+        <Skeleton className="h-5 w-5 rounded-full" />
+        <div className="flex-1 space-y-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+        </div>
+    </div>
+);

@@ -1,18 +1,19 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { doc, getDoc, runTransaction } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import { doc, getDoc, runTransaction, collection, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Settings, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileModal } from '@/components/modals/edit-profile-modal';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileData } from '@/app/u/[username]/page';
 import { User } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const Stat = ({ value, label }: { value: number, label: string }) => (
     <div className="text-center">
@@ -36,15 +37,16 @@ export const ProfileHeaderSkeleton = () => (
                     </div>
                 </div>
                            
+                <div className="max-w-md w-full">
+                   <Skeleton className="h-4 w-full max-w-sm mt-2" />
+                </div>
+
                 <div className="flex justify-center sm:justify-start gap-6">
                     <Skeleton className="h-5 w-20" />
                     <Skeleton className="h-5 w-20" />
                     <Skeleton className="h-5 w-20" />
                 </div>
 
-                 <div className="max-w-md w-full">
-                   <Skeleton className="h-4 w-full max-w-sm mt-2" />
-                </div>
             </div>
         </div>
     </div>
@@ -60,6 +62,7 @@ interface ProfileHeaderProps {
 
 export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile, postsCount }: ProfileHeaderProps) => {
     const { toast } = useToast();
+    const router = useRouter();
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
@@ -151,6 +154,33 @@ export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile, postsCou
         }
     };
 
+    const handleSendMessage = async () => {
+        if (!currentUser || !profileUser) return;
+    
+        const conversationId = [currentUser.uid, profileUser.uid].sort().join('_');
+        const conversationRef = doc(db, 'conversations', conversationId);
+    
+        try {
+            const docSnap = await getDoc(conversationRef);
+            if (!docSnap.exists()) {
+                await setDoc(conversationRef, {
+                    participants: [currentUser.uid, profileUser.uid],
+                    lastMessage: `بدأت المحادثة`,
+                    lastMessageSender: currentUser.uid,
+                    lastMessageTimestamp: serverTimestamp(),
+                }, { merge: true });
+            }
+            router.push(`/messages/${conversationId}`);
+        } catch (error) {
+            console.error("Error creating/navigating to conversation:", error);
+            toast({
+                variant: 'destructive',
+                title: 'خطأ',
+                description: 'لم نتمكن من بدء المحادثة.'
+            });
+        }
+    };
+
     return (
         <>
             {isOwnProfile && (
@@ -191,7 +221,10 @@ export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile, postsCou
                                     <Button size="sm" className="w-32 rounded-full px-8" variant={isFollowing ? 'outline' : 'default'} onClick={handleFollowToggle} disabled={isFollowLoading}>
                                         {isFollowLoading ? 'جارٍ...' : isFollowing ? 'إلغاء المتابعة' : 'متابعة'}
                                     </Button>
-                                     <Button size="sm" variant="outline" className="w-32 rounded-full px-8">مراسلة</Button>
+                                     <Button size="sm" variant="outline" className="w-32 rounded-full px-8" onClick={handleSendMessage}>
+                                         <MessageSquare className="ml-2 h-4 w-4" />
+                                         مراسلة
+                                     </Button>
                                 </div>
                             )}
                             </div>

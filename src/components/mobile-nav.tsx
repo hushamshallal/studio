@@ -46,7 +46,7 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
     { href: '/', iconName: 'Home', label: 'الرئيسية' },
     { href: '/explore', iconName: 'Compass', label: 'استكشاف' },
     { href: '#', iconName: 'Plus', label: 'نشر', isCenter: true },
-    { href: '/messages', iconName: 'Mail', label: 'الرسائل' },
+    { href: '/reels', iconName: 'Clapperboard', label: 'ريلز' },
     { href: username ? `/u/${username}` : '#', iconName: 'User', label: 'الملف الشخصي', disabled: !user || !username }
   ];
 

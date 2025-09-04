@@ -12,7 +12,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { UserNav } from '@/components/user-nav';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isCreatePostOpen, setCreatePostOpen] = useState(false);
   const [isSidebarExpanded, setSidebarExpanded] = useState(false);
   const [username, setUsername] = useState('');
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -32,12 +33,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.push('/login');
     } else if (user) {
         const userDocRef = doc(db, 'users', user.uid);
-        const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
             if (doc.exists()) {
                 setUsername(doc.data().username);
             }
         });
-        return () => unsubscribe();
+
+        const notificationsRef = collection(db, 'users', user.uid, 'notifications');
+        const q = query(notificationsRef, where('isRead', '==', false));
+        const unsubscribeNotifs = onSnapshot(q, (snapshot) => {
+            setHasUnreadNotifications(!snapshot.empty);
+        });
+
+        return () => {
+            unsubscribeUser();
+            unsubscribeNotifs();
+        };
     }
   }, [user, authLoading, router]);
 
@@ -151,48 +162,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="relative rounded-full">
-                                <Icons.Bell className="h-5 w-5" />
+                            <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+                                <Link href="/notifications">
+                                    <Icons.Bell className="h-5 w-5" />
+                                    {hasUnreadNotifications && <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />}
+                                </Link>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-80 mt-2" align="end">
-                            <DropdownMenuLabel className="font-bold">الإشعارات</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <div className="p-4 text-center text-sm text-muted-foreground">
-                              <p>لا توجد إشعارات جديدة.</p>
-                            </div>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <Link href="/notifications" className="flex items-center justify-center cursor-pointer">
-                                    عرض كل الإشعارات
-                                </Link>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
                        </DropdownMenu>
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="relative rounded-full">
-                                    <Icons.Mail className="h-5 w-5" />
+                                <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+                                     <Link href="/messages">
+                                        <Icons.Mail className="h-5 w-5" />
+                                     </Link>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-80 mt-2" align="end">
-                                <DropdownMenuLabel className="font-bold">الرسائل</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <div className="p-4 text-center text-sm text-muted-foreground">
-                                    <p>لا توجد رسائل جديدة.</p>
-                                </div>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href="/messages" className="flex items-center justify-center cursor-pointer">
-                                        عرض الكل في الرسائل
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
                         </DropdownMenu>
                   </div>
               </header>
-              <div className="pb-16 sm:pb-0 h-[calc(100vh-65px)]">
+              <div className="pb-16 sm:pb-0 h-[calc(100vh-65px)] overflow-y-auto">
                 {children}
               </div>
           </main>
