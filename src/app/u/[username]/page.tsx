@@ -106,7 +106,12 @@ export default function ProfilePage() {
     return (
         <AppLayout>
             <div className="w-full">
-                <ProfileHeader profileUser={profileUser} currentUser={currentUser!} isOwnProfile={isOwnProfile} />
+                <ProfileHeader 
+                    profileUser={profileUser} 
+                    currentUser={currentUser!} 
+                    isOwnProfile={isOwnProfile}
+                    postsCount={userPosts.length}
+                />
                 <ProfileTabs userPosts={userPosts} />
             </div>
         </AppLayout>

@@ -4,7 +4,6 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Settings } from 'lucide-react';
@@ -52,7 +51,14 @@ export const ProfileHeaderSkeleton = () => (
 );
 
 
-export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile }: { profileUser: UserProfileData, currentUser: User, isOwnProfile: boolean }) => {
+interface ProfileHeaderProps {
+    profileUser: UserProfileData;
+    currentUser: User;
+    isOwnProfile: boolean;
+    postsCount: number;
+}
+
+export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile, postsCount }: ProfileHeaderProps) => {
     const { toast } = useToast();
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
@@ -196,7 +202,7 @@ export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile }: { prof
                         </div>
 
                         <div className="flex justify-center sm:justify-start gap-6">
-                            <Stat value={userPosts.length || 0} label="منشورات" />
+                            <Stat value={postsCount || 0} label="منشورات" />
                             <Stat value={profileUser.followersCount || 0} label="المتابعون" />
                             <Stat value={profileUser.followingCount || 0} label="يتابع" />
                         </div>
