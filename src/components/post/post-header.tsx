@@ -9,20 +9,22 @@ import Link from 'next/link';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import type { Post } from './post-types';
+import { Timestamp } from 'firebase/firestore';
 
 type PostHeaderProps = {
     authorAvatar: string;
     authorName: string;
     authorHandle: string;
-    createdAt: number | { seconds: number, nanoseconds: number };
+    createdAt: number | { seconds: number, nanoseconds: number } | Timestamp;
 };
 
 const formatTimestamp = (timestamp: PostHeaderProps['createdAt']) => {
     if (!timestamp) return 'الآن';
-    // Handle both number (from server) and Timestamp object (from client-side updates)
+    
     const date = typeof timestamp === 'number' 
         ? new Date(timestamp) 
-        : new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+        : (timestamp instanceof Timestamp ? timestamp.toDate() : new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000));
+        
     return formatDistanceToNowStrict(date, { addSuffix: true, locale: ar });
 };
 

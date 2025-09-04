@@ -11,7 +11,8 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { CommentItem, Comment } from './comment-item';
+import { CommentItem } from './comment-item';
+import { Comment } from './comment-types';
 import { ScrollArea } from './ui/scroll-area';
 import { Skeleton } from './ui/skeleton';
 
@@ -67,7 +68,7 @@ export function CommentSheet({ postId, postAuthorId, isOpen, onOpenChange }: Com
                 return {
                     id: doc.id,
                     ...data,
-                    createdAt: (data.createdAt?.seconds * 1000) || Date.now(),
+                    createdAt: data.createdAt ? (data.createdAt.seconds * 1000 + data.createdAt.nanoseconds / 1000000) : Date.now(),
                     likes: data.likes || 0,
                     replyCount: data.replyCount || 0,
                 } as Comment
@@ -95,7 +96,6 @@ export function CommentSheet({ postId, postAuthorId, isOpen, onOpenChange }: Com
         const textToSend = newComment.trim();
         setNewComment('');
 
-        // Optimistic UI update
         const optimisticComment: Comment = {
             id: `temp_${Date.now()}`,
             authorId: user.uid,
@@ -103,7 +103,7 @@ export function CommentSheet({ postId, postAuthorId, isOpen, onOpenChange }: Com
             authorAvatar: currentUserData.photoURL,
             authorHandle: currentUserData.username,
             text: textToSend,
-            createdAt: Date.now(),
+            createdAt: Timestamp.now(),
             likes: 0,
             replyCount: 0,
         };
