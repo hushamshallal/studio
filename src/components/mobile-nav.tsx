@@ -11,6 +11,7 @@ import { useAuth } from '@/context/auth-context';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
+import { Clapperboard } from 'lucide-react';
 
 interface MobileNavProps {
   onPostClick: () => void;
@@ -70,7 +71,7 @@ export function MobileNav({ onPostClick }: MobileNavProps) {
             );
           }
 
-          const LucideIcon = Icons[item.iconName as keyof typeof Icons];
+          const LucideIcon = item.iconName === 'Clapperboard' ? Clapperboard : Icons[item.iconName as keyof typeof Icons];
           const isActive = item.href !== '/' && item.href !=='#' ? pathname.startsWith(item.href) : pathname === item.href;
           
           return (

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import * as Icons from 'lucide-react';
@@ -16,7 +16,7 @@ import { doc, getDoc, onSnapshot, collection, query, where } from 'firebase/fire
 import { db } from '@/lib/firebase/config';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-import { Settings } from 'lucide-react';
+import { Settings, Clapperboard } from 'lucide-react';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -27,6 +27,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [username, setUsername] = useState('');
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const { toast } = useToast();
+  const notificationSoundRef = useRef<HTMLAudioElement>(null);
+  const lastNotificationCount = useRef(0);
+  const lastConversationTimestamp = useRef<number | null>(null);
+
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      notificationSoundRef.current = new Audio('/notification.mp3');
+    }
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -39,15 +49,44 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             }
         });
 
+        // Notifications listener
         const notificationsRef = collection(db, 'users', user.uid, 'notifications');
         const q = query(notificationsRef, where('isRead', '==', false));
         const unsubscribeNotifs = onSnapshot(q, (snapshot) => {
+            const newCount = snapshot.docs.length;
             setHasUnreadNotifications(!snapshot.empty);
+            if (newCount > lastNotificationCount.current) {
+                notificationSoundRef.current?.play().catch(e => console.error("Error playing sound:", e));
+            }
+            lastNotificationCount.current = newCount;
+        });
+
+        // Conversations listener for new messages
+        const conversationsRef = collection(db, 'conversations');
+        const cq = query(conversationsRef, where('participants', 'array-contains', user.uid));
+        const unsubscribeConvos = onSnapshot(cq, (snapshot) => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === "modified") {
+                    const convo = change.doc.data();
+                    if (convo.lastMessageSender !== user.uid) {
+                        const newTimestamp = convo.lastMessageTimestamp?.seconds || 0;
+                        if (lastConversationTimestamp.current !== null && newTimestamp > lastConversationTimestamp.current) {
+                            notificationSoundRef.current?.play().catch(e => console.error("Error playing sound:", e));
+                        }
+                        if (lastConversationTimestamp.current === null) {
+                             lastConversationTimestamp.current = newTimestamp;
+                        } else if (newTimestamp > lastConversationTimestamp.current) {
+                            lastConversationTimestamp.current = newTimestamp;
+                        }
+                    }
+                }
+            });
         });
 
         return () => {
             unsubscribeUser();
             unsubscribeNotifs();
+            unsubscribeConvos();
         };
     }
   }, [user, authLoading, router]);
@@ -160,26 +199,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                  <div className="sm:hidden flex-1" />
                  <h1 className="flex-1 text-xl font-bold truncate text-center">{pageTitle}</h1>
                   <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
-                                <Link href="/notifications">
-                                    <Icons.Bell className="h-5 w-5" />
-                                    {hasUnreadNotifications && <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />}
-                                </Link>
-                            </Button>
-                          </DropdownMenuTrigger>
-                       </DropdownMenu>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
-                                     <Link href="/messages">
-                                        <Icons.Mail className="h-5 w-5" />
-                                     </Link>
-                                </Button>
-                            </DropdownMenuTrigger>
-                        </DropdownMenu>
+                       <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+                           <Link href="/notifications">
+                               <Icons.Bell className="h-5 w-5" />
+                               {hasUnreadNotifications && <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500" />}
+                           </Link>
+                       </Button>
+                       
+                       <Button variant="ghost" size="icon" className="relative rounded-full" asChild>
+                            <Link href="/messages">
+                               <Icons.Mail className="h-5 w-5" />
+                            </Link>
+                       </Button>
                   </div>
               </header>
               <div className="pb-16 sm:pb-0 h-[calc(100vh-65px)] overflow-y-auto">

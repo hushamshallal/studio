@@ -62,7 +62,10 @@ const getNotificationLink = (notification: Notification): string => {
         case 'like':
         case 'comment':
         case 'mention':
-            return `/post/${notification.post?.id}`; // Assuming a post page route
+            // Although we don't have a dedicated post page, we can link to the homepage
+            // and in a future iteration, scroll to the specific post.
+            // For now, linking to homepage is better than a dead link.
+            return `/?postId=${notification.post?.id || ''}`;
         default:
             return '#';
     }

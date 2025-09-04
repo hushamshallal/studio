@@ -48,11 +48,17 @@ type UserProfile = {
   username: string;
 };
 
-const MessageItem = ({ msg, isOwnMessage }: { msg: Message; isOwnMessage: boolean }) => {
+const MessageItem = ({ msg, isOwnMessage, recipient }: { msg: Message; isOwnMessage: boolean, recipient: UserProfile | null }) => {
     return (
         <div className={cn("flex items-end gap-2", isOwnMessage ? "flex-row-reverse" : "flex-row")}>
+             {!isOwnMessage && (
+                <Avatar className="h-8 w-8">
+                    <AvatarImage src={recipient?.photoURL} alt={recipient?.displayName} data-ai-hint="person" />
+                    <AvatarFallback>{recipient?.displayName.charAt(0)}</AvatarFallback>
+                </Avatar>
+            )}
             <div className={cn(
-                "p-3 rounded-2xl max-w-sm md:max-w-md lg:max-w-lg",
+                "p-3 rounded-2xl max-w-sm md:max-w-md lg:max-w-lg shadow-sm",
                 isOwnMessage ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted rounded-bl-none"
             )}>
                 {msg.post ? (
@@ -84,9 +90,12 @@ export default function ConversationPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: 'smooth' | 'auto' = 'auto') => {
     if (viewportRef.current) {
-        viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+        viewportRef.current.scrollTo({
+            top: viewportRef.current.scrollHeight,
+            behavior: behavior,
+        });
     }
   }
 
@@ -121,7 +130,7 @@ export default function ConversationPage() {
         const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
         setMessages(msgs);
         setLoading(false);
-        setTimeout(scrollToBottom, 100);
+        setTimeout(() => scrollToBottom('smooth'), 100);
     }, (error) => {
         console.error("Error fetching messages:", error);
         setLoading(false);
@@ -143,6 +152,7 @@ export default function ConversationPage() {
     const textToSend = newMessage.trim();
     setNewMessage('');
     
+    // Optimistic UI update
     const optimisticMessage: Message = {
         id: `temp_${Date.now()}`,
         senderId: user.uid,
@@ -150,7 +160,7 @@ export default function ConversationPage() {
         createdAt: Timestamp.now(),
     };
     setMessages(prev => [...prev, optimisticMessage]);
-    setTimeout(scrollToBottom, 0);
+    setTimeout(() => scrollToBottom('smooth'), 0);
 
     const conversationRef = doc(db, 'conversations', conversationId);
     const messagesRef = collection(conversationRef, 'messages');
@@ -162,13 +172,21 @@ export default function ConversationPage() {
             createdAt: serverTimestamp(),
         };
         
-        await addDoc(messagesRef, messageData);
+        const newDocRef = await addDoc(messagesRef, messageData);
         
         await setDoc(conversationRef, {
             lastMessage: textToSend,
             lastMessageSender: user.uid,
             lastMessageTimestamp: serverTimestamp(),
         }, { merge: true });
+
+        // Replace optimistic message with real one
+        getDoc(newDocRef).then(doc => {
+            if(doc.exists()){
+                 setMessages(prev => prev.map(m => m.id === optimisticMessage.id ? { id: doc.id, ...doc.data() } as Message : m));
+            }
+        });
+
 
         if (recipient.uid === 'salam_assistant_bot') {
             const chatHistory = messages.map(msg => ({
@@ -223,8 +241,8 @@ export default function ConversationPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-        <header className="flex items-center gap-4 p-3 border-b">
+    <div className="flex flex-col h-full bg-card">
+        <header className="flex items-center gap-4 p-3 border-b bg-background/80 backdrop-blur-sm">
             <Button variant="ghost" size="icon" className="sm:hidden" onClick={() => router.push('/messages')}>
                 <ArrowRight className="h-5 w-5" />
             </Button>
@@ -239,7 +257,7 @@ export default function ConversationPage() {
         <ScrollArea className="flex-1" viewportRef={viewportRef}>
             <div className="p-4 space-y-4">
                 {messages.map(msg => (
-                    <MessageItem key={msg.id} msg={msg} isOwnMessage={msg.senderId === user?.uid} />
+                    <MessageItem key={msg.id} msg={msg} isOwnMessage={msg.senderId === user?.uid} recipient={recipient} />
                 ))}
             </div>
         </ScrollArea>
@@ -249,10 +267,10 @@ export default function ConversationPage() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="اكتب رسالتك..."
-                    className="flex-1 rounded-full bg-muted focus-visible:ring-1"
+                    className="flex-1 rounded-full bg-muted focus-visible:ring-1 h-11"
                     disabled={sending && newMessage === ''}
                 />
-                <Button type="submit" size="icon" className="rounded-full" disabled={sending || newMessage.trim() === ''}>
+                <Button type="submit" size="icon" className="rounded-full w-11 h-11" disabled={sending || newMessage.trim() === ''}>
                     <Send className="h-5 w-5" />
                 </Button>
             </form>
