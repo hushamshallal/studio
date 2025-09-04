@@ -1,8 +1,9 @@
+
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase/config';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, getIdToken } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,16 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+
+async function setTokenCookie(user: User | null) {
+    if(user) {
+        const token = await user.getIdToken();
+        const expires = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+        document.cookie = `firebase-token=${JSON.stringify({uid: user.uid, token})}; path=/; expires=${expires.toUTCString()}; SameSite=Lax; Secure`;
+    } else {
+        document.cookie = `firebase-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure`;
+    }
+}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -19,6 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      setTokenCookie(user);
     });
 
     return () => unsubscribe();

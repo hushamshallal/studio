@@ -5,7 +5,7 @@ import { useAuth } from "@/context/auth-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Video, Mic, Send, X } from 'lucide-react';
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { db, storage } from "@/lib/firebase/config";
 import { addDoc, collection, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -14,13 +14,25 @@ import Image from "next/image";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 export function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
-    const { user, loading } = useAuth();
+    const { user, loading: authLoading } from useAuth();
     const { toast } = useToast();
     const [content, setContent] = useState('');
     const [mediaFile, setMediaFile] = useState<File | null>(null);
     const [mediaPreview, setMediaPreview] = useState<string | null>(null);
     const [isPosting, setIsPosting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [userData, setUserData] = useState<any>(null);
+
+     useEffect(() => {
+        if(user) {
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then(doc => {
+                if(doc.exists()) {
+                    setUserData(doc.data());
+                }
+            })
+        }
+    }, [user])
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -31,22 +43,13 @@ export function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
     };
 
     const handlePost = async () => {
-        if (!user || (content.trim() === '' && !mediaFile)) return;
+        if (!user || !userData || (content.trim() === '' && !mediaFile)) return;
 
         setIsPosting(true);
         let mediaUrl = '';
         let mediaType = '';
 
         try {
-            // Fetch full user data from Firestore
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
-            
-            if (!userDoc.exists()) {
-                throw new Error("User data not found in Firestore.");
-            }
-            const userData = userDoc.data();
-
             // Upload media if it exists
             if (mediaFile) {
                 const storageRef = ref(storage, `posts/${user.uid}/${Date.now()}_${mediaFile.name}`);
@@ -94,7 +97,25 @@ export function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
         }
     };
     
-    if (loading) return null;
+    if (authLoading || !user) {
+        return (
+            <div className="p-4">
+                 <div className="flex items-start gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-20 w-full" />
+                         <div className="flex justify-between items-center">
+                            <div className="flex gap-2">
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                            </div>
+                            <Skeleton className="h-10 w-24 rounded-full" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="p-4">

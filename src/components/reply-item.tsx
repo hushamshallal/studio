@@ -14,8 +14,9 @@ export type Reply = {
     authorId: string;
     authorName: string;
     authorAvatar: string;
+    authorHandle: string;
     text: string;
-    createdAt: {
+    createdAt: number | {
         seconds: number;
         nanoseconds: number;
     };
@@ -24,27 +25,29 @@ export type Reply = {
 
 const formatTimestamp = (timestamp: Reply['createdAt']) => {
     if (!timestamp) return '';
-    const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+     const date = typeof timestamp === 'number'
+        ? new Date(timestamp)
+        : new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
     return formatDistanceToNowStrict(date, { addSuffix: true, locale: ar });
 };
 
 
 export const ReplyItem = ({ reply }: { reply: Reply }) => {
-    const [authorHandle, setAuthorHandle] = useState('');
+    const [authorHandle, setAuthorHandle] = useState(reply.authorHandle || '');
     const timeAgo = formatTimestamp(reply.createdAt);
 
     useEffect(() => {
-        const fetchUserHandle = async () => {
-            if (reply.authorId) {
+        if (!authorHandle && reply.authorId) {
+            const fetchUserHandle = async () => {
                 const userDocRef = doc(db, 'users', reply.authorId);
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists()) {
                     setAuthorHandle(userDoc.data().username || '');
                 }
-            }
-        };
-        fetchUserHandle();
-    }, [reply.authorId]);
+            };
+            fetchUserHandle();
+        }
+    }, [reply.authorId, authorHandle]);
 
 
     return (

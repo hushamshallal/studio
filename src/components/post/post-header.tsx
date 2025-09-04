@@ -8,17 +8,21 @@ import { MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import type { Post } from './post-types';
 
 type PostHeaderProps = {
     authorAvatar: string;
     authorName: string;
     authorHandle: string;
-    createdAt: { seconds: number, nanoseconds: number };
+    createdAt: number | { seconds: number, nanoseconds: number };
 };
 
 const formatTimestamp = (timestamp: PostHeaderProps['createdAt']) => {
     if (!timestamp) return 'الآن';
-    const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+    // Handle both number (from server) and Timestamp object (from client-side updates)
+    const date = typeof timestamp === 'number' 
+        ? new Date(timestamp) 
+        : new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
     return formatDistanceToNowStrict(date, { addSuffix: true, locale: ar });
 };
 

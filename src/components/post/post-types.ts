@@ -10,7 +10,7 @@ export type Post = {
     mediaType?: 'image' | 'video';
     likes: number;
     comments: number;
-    createdAt: {
+    createdAt: number | {
         seconds: number;
         nanoseconds: number;
     };

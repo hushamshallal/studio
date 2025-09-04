@@ -18,6 +18,7 @@ import { Skeleton } from './ui/skeleton';
 
 interface CommentSheetProps {
     postId: string;
+    postAuthorId: string;
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
 }
@@ -32,7 +33,7 @@ const CommentSkeleton = () => (
     </div>
 )
 
-export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps) {
+export function CommentSheet({ postId, postAuthorId, isOpen, onOpenChange }: CommentSheetProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [comments, setComments] = useState<Comment[]>([]);
@@ -61,12 +62,16 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
         const q = query(commentsRef, orderBy('createdAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const commentsData = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                likes: doc.data().likes || 0,
-                replyCount: doc.data().replyCount || 0,
-            } as Comment));
+            const commentsData = snapshot.docs.map(doc => {
+                 const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt: (data.createdAt?.seconds * 1000) || Date.now(),
+                    likes: data.likes || 0,
+                    replyCount: data.replyCount || 0,
+                } as Comment
+            });
             setComments(commentsData);
             setIsLoading(false);
         }, (error) => {
@@ -96,8 +101,9 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
             authorId: user.uid,
             authorName: currentUserData.displayName,
             authorAvatar: currentUserData.photoURL,
+            authorHandle: currentUserData.username,
             text: textToSend,
-            createdAt: Timestamp.now(),
+            createdAt: Date.now(),
             likes: 0,
             replyCount: 0,
         };
@@ -111,13 +117,14 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 authorId: user.uid,
                 authorName: currentUserData.displayName,
                 authorAvatar: currentUserData.photoURL,
+                authorHandle: currentUserData.username,
                 text: textToSend,
                 createdAt: serverTimestamp(),
                 likes: 0,
                 replyCount: 0
             };
             
-            await addDoc(commentsRef, newCommentData);
+            const newCommentRef = await addDoc(commentsRef, newCommentData);
             
             await runTransaction(db, async (transaction) => {
                 const postDoc = await transaction.get(postRef);
@@ -127,6 +134,28 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 
                 const newCommentCount = (postDoc.data().comments || 0) + 1;
                 transaction.update(postRef, { comments: newCommentCount });
+
+                // Add notification
+                if (postAuthorId !== user.uid) {
+                    const notificationsRef = collection(db, 'users', postAuthorId, 'notifications');
+                    transaction.set(doc(notificationsRef), {
+                        type: 'comment',
+                        fromUser: {
+                            name: currentUserData.displayName,
+                            username: currentUserData.username,
+                            avatarUrl: currentUserData.photoURL,
+                        },
+                        post: {
+                            id: postId,
+                            content: postDoc.data().content,
+                        },
+                        comment: {
+                            text: textToSend,
+                        },
+                        timestamp: serverTimestamp(),
+                        isRead: false,
+                    })
+                }
             });
 
         } catch (error) {
@@ -136,7 +165,6 @@ export function CommentSheet({ postId, isOpen, onOpenChange }: CommentSheetProps
                 title: 'خطأ',
                 description: 'لم نتمكن من إضافة تعليقك. حاول مرة أخرى.',
             });
-            // Revert optimistic update on error
             setComments(prev => prev.filter(c => c.id !== optimisticComment.id));
         } finally {
             setIsPosting(false);

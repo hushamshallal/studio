@@ -22,8 +22,9 @@ export type Comment = {
     authorId: string;
     authorName: string;
     authorAvatar: string;
+    authorHandle: string;
     text: string;
-    createdAt: {
+    createdAt: number | {
         seconds: number;
         nanoseconds: number;
     };
@@ -33,7 +34,9 @@ export type Comment = {
 
 const formatTimestamp = (timestamp: Comment['createdAt']) => {
     if (!timestamp) return '';
-    const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+    const date = typeof timestamp === 'number'
+        ? new Date(timestamp)
+        : new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
     return formatDistanceToNowStrict(date, { addSuffix: true, locale: ar });
 };
 
@@ -41,7 +44,7 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const [authorHandle, setAuthorHandle] = useState('');
+    const [authorHandle, setAuthorHandle] = useState(comment.authorHandle || '');
     const [isLiked, setIsLiked] = useState(false);
     const [likeCount, setLikeCount] = useState(comment.likes);
     const [isLikeLoading, setIsLikeLoading] = useState(false);
@@ -68,17 +71,17 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
     const timeAgo = formatTimestamp(comment.createdAt);
 
     useEffect(() => {
-        const fetchUserHandle = async () => {
-            if (comment.authorId) {
+        if (!authorHandle && comment.authorId) {
+            const fetchUserHandle = async () => {
                 const userDocRef = doc(db, 'users', comment.authorId);
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists()) {
                     setAuthorHandle(userDoc.data().username || '');
                 }
-            }
-        };
-        fetchUserHandle();
-    }, [comment.authorId]);
+            };
+            fetchUserHandle();
+        }
+    }, [comment.authorId, authorHandle]);
     
     // Listen for real-time updates on the comment's like and reply count
      useEffect(() => {
@@ -109,7 +112,11 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
             const repliesRef = collection(db, 'posts', postId, 'comments', comment.id, 'replies');
             const q = query(repliesRef, orderBy('createdAt', 'asc'));
             const unsubscribe = onSnapshot(q, (snapshot) => {
-                const repliesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Reply));
+                const repliesData = snapshot.docs.map(doc => ({ 
+                    id: doc.id,
+                     ...doc.data(),
+                    createdAt: (doc.data().createdAt?.seconds * 1000) || Date.now()
+                } as Reply));
                 setReplies(repliesData);
                 setRepliesLoading(false);
             }, (error) => {
@@ -177,6 +184,7 @@ export const CommentItem = ({ comment, postId }: { comment: Comment; postId: str
                     authorId: user.uid,
                     authorName: currentUserData.displayName,
                     authorAvatar: currentUserData.photoURL,
+                    authorHandle: currentUserData.username,
                     text: newReply.trim(),
                     createdAt: serverTimestamp(),
                     likes: 0

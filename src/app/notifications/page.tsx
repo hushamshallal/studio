@@ -1,63 +1,52 @@
 
-"use client";
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { NotificationItem, Notification, NotificationSkeleton } from '@/components/notification-item';
-import { useAuth } from '@/context/auth-context';
-import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, onSnapshot, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { BellOff } from 'lucide-react';
+import { getDocs, collection, query, orderBy, writeBatch } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { headers } from 'next/headers';
+import { getUidFromCookie } from '@/lib/firebase/server-auth';
+import { NotificationList } from '@/components/notification-list';
 
-export default function NotificationsPage() {
-    const { user } = useAuth();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        if (!user) {
-            setLoading(false);
-            return;
-        };
-
-        const notificationsRef = collection(db, 'users', user.uid, 'notifications');
-        const q = query(notificationsRef, orderBy('timestamp', 'desc'));
-
-        const unsubscribe = onSnapshot(q, async (snapshot) => {
-            const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-            setNotifications(notifs);
-            setLoading(false);
-
-            // Mark notifications as read
-            const unreadNotifs = snapshot.docs.filter(doc => !doc.data().isRead);
-            if (unreadNotifs.length > 0) {
-                const batch = writeBatch(db);
-                unreadNotifs.forEach(doc => {
-                    batch.update(doc.ref, { isRead: true });
-                });
-                await batch.commit();
-            }
-        }, (error) => {
-            console.error("Error fetching notifications:", error);
-            setLoading(false);
+async function getNotifications(uid: string) {
+    const notificationsRef = collection(db, 'users', uid, 'notifications');
+    const q = query(notificationsRef, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    
+    // Mark notifications as read on the server
+    const unreadNotifs = snapshot.docs.filter(doc => !doc.data().isRead);
+    if (unreadNotifs.length > 0) {
+        const batch = writeBatch(db);
+        unreadNotifs.forEach(doc => {
+            batch.update(doc.ref, { isRead: true });
         });
+        await batch.commit();
+    }
 
-        return () => unsubscribe();
-    }, [user]);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+}
 
-    if (loading) {
+
+export default async function NotificationsPage() {
+    const uid = await getUidFromCookie();
+    
+    if (!uid) {
         return (
-            <div className="divide-y">
-                {Array.from({ length: 7 }).map((_, i) => <NotificationSkeleton key={i} />)}
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+                <BellOff className="h-16 w-16 text-muted-foreground" />
+                <p className="mt-4 text-lg font-semibold">الرجاء تسجيل الدخول</p>
+                <p className="text-muted-foreground">يجب عليك تسجيل الدخول لعرض الإشعارات.</p>
             </div>
         )
     }
 
+    const initialNotifications = await getNotifications(uid);
+
+
     return (
         <>
-            {notifications && notifications.length > 0 ? (
-                <div className="divide-y">
-                    {notifications.map(n => <NotificationItem key={n.id} notification={n} />)}
-                </div>
+            {initialNotifications && initialNotifications.length > 0 ? (
+                <NotificationList initialNotifications={initialNotifications} userId={uid} />
             ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-center">
                     <BellOff className="h-16 w-16 text-muted-foreground" />
