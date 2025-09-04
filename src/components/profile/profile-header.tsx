@@ -52,14 +52,12 @@ export const ProfileHeaderSkeleton = () => (
 );
 
 
-export const ProfileHeader = ({ profileUser, currentUser }: { profileUser: UserProfileData, currentUser: User }) => {
+export const ProfileHeader = ({ profileUser, currentUser, isOwnProfile }: { profileUser: UserProfileData, currentUser: User, isOwnProfile: boolean }) => {
     const { toast } = useToast();
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowLoading, setIsFollowLoading] = useState(false);
     
-    const isOwnProfile = currentUser?.uid === profileUser.uid;
-
     useEffect(() => {
         if (!currentUser || isOwnProfile) return;
 
@@ -157,7 +155,7 @@ export const ProfileHeader = ({ profileUser, currentUser }: { profileUser: UserP
                     onSave={handleProfileUpdate}
                 />
             )}
-            <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center">
+            <div className="p-4 sm:p-6 lg:p-8 flex flex-col items-center border-b">
                  <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-4 sm:gap-8 w-full max-w-4xl">
                     <Avatar className="w-28 h-28 md:w-36 md:h-36 text-6xl border-4 border-background shadow-lg shrink-0">
                         <AvatarImage src={profileUser.photoURL} alt={profileUser.displayName} data-ai-hint="person" />
@@ -198,7 +196,7 @@ export const ProfileHeader = ({ profileUser, currentUser }: { profileUser: UserP
                         </div>
 
                         <div className="flex justify-center sm:justify-start gap-6">
-                            <Stat value={profileUser.postsCount || 0} label="منشورات" />
+                            <Stat value={userPosts.length || 0} label="منشورات" />
                             <Stat value={profileUser.followersCount || 0} label="المتابعون" />
                             <Stat value={profileUser.followingCount || 0} label="يتابع" />
                         </div>

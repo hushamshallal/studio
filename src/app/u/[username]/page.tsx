@@ -11,6 +11,7 @@ import { Post } from '@/components/post/post-types';
 import { ProfileHeader, ProfileHeaderSkeleton } from '@/components/profile/profile-header';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
 import { useToast } from '@/hooks/use-toast';
+import { User } from 'firebase/auth';
 
 export type UserProfileData = {
     uid: string;
@@ -48,7 +49,8 @@ export default function ProfilePage() {
                 setProfileUser(null);
             } else {
                 const userDoc = querySnapshot.docs[0];
-                setProfileUser(userDoc.data() as UserProfileData);
+                const userData = userDoc.data() as UserProfileData
+                setProfileUser(userData);
 
                 const postsQuery = query(collection(db, 'posts'), where('authorId', '==', userDoc.id));
                 const postsSnapshot = await getDocs(postsQuery);
@@ -98,11 +100,13 @@ export default function ProfilePage() {
             </AppLayout>
         )
     }
+    
+    const isOwnProfile = currentUser?.uid === profileUser.uid;
 
     return (
         <AppLayout>
             <div className="w-full">
-                <ProfileHeader profileUser={profileUser} currentUser={currentUser!} />
+                <ProfileHeader profileUser={profileUser} currentUser={currentUser!} isOwnProfile={isOwnProfile} />
                 <ProfileTabs userPosts={userPosts} />
             </div>
         </AppLayout>

@@ -12,10 +12,10 @@ export const ProfileTabs = ({ userPosts }: { userPosts: Post[] }) => {
     const mediaPosts = userPosts.filter(p => p.mediaUrl);
 
     return (
-        <Tabs defaultValue="grid" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sticky top-[65px] z-10 rounded-none bg-background border-y">
-                <TabsTrigger value="grid" className="flex gap-2"><Grid3x3 className="h-5 w-5" /> الصور</TabsTrigger>
+        <Tabs defaultValue="list" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sticky top-[64px] z-10 rounded-none bg-background border-b">
                 <TabsTrigger value="list" className="flex gap-2"><List className="h-5 w-5" /> المنشورات</TabsTrigger>
+                <TabsTrigger value="grid" className="flex gap-2"><Grid3x3 className="h-5 w-5" /> الصور</TabsTrigger>
             </TabsList>
             <TabsContent value="grid" className="p-1">
                  <div className="grid grid-cols-3 gap-1">
